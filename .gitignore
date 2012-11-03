@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 .installed.cfg
 bin
 develop-eggs
@@ -14,9 +13,7 @@ build/
 *.pyc
 settings.py
 *.sql
-=======
 *.log
 *.pot
-*.pyc
 local_settings.py
->>>>>>> 1b1fe53c8a33918d08ae2a422158167c989e79f2
+.idea*
