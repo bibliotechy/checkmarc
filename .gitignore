@@ -1,5 +1,5 @@
-.pyc
-.sql
-.pyo
-.idea
+*.pyc
+*.sql
+*.pyo
+.idea*
 settings.py
