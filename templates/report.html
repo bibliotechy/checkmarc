@@ -1,0 +1,16 @@
+{% if report %}
+
+   <ul>
+   <li>{{ report.title }}</li>
+   <li>{{ report.description }}</li>
+   <li> Checks:
+       <ol>
+           {%  for check in report.checks.all %}
+
+               <li>{{ check }}</li>
+           {% endfor %}
+       </ol>
+   </li>
+   </ul>
+
+{% endif %}

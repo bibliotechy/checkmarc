@@ -1,0 +1,13 @@
+{% if report_form %}
+
+<form action="{% if form.instance.pk %}report/edit/{{ fornstance.pk }}/{% endif %}" method="post">{% csrf_token %}
+    {{ report_form }}
+    {% if checks %}
+
+        {{ checks }}
+
+    {% endif %}
+    <input type="submit" value="Submit" />
+</form>
+
+{% endif %}

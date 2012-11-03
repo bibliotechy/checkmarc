@@ -1,0 +1,21 @@
+{% if checks %}
+    <ul>
+  {% for check in checks %}
+   <li>{{ check.title }}</li>
+  {% endfor %}
+   </ul>
+{% endif %}
+
+{% if checkform %}
+
+    <form action="/checks/" method="post">{% csrf_token %}
+        {% for field in checkform %}
+                <div class="fieldWrapper">
+                    {{ field.errors }}
+                    {{ field.label_tag }} : {{ field }}
+                </div>
+        {% endfor %}
+        <input type="submit" value="Submit" />
+    </form>
+
+{% endif %}
