@@ -27,12 +27,14 @@ def add_report(request):
         if request.user.is_authenticated():
             user = request.user
         else:
-            user = User.objects.get(username='anonymous')
+            user = None
 
         if report_data.is_valid():
             title       = report_data.cleaned_data['title']
             description = report_data.cleaned_data['description']
             creator     = user
+        if checks_data.is_valid():
+
 
 
         else:
