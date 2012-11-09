@@ -6,7 +6,7 @@ from django import forms
 class Check(models.Model):
 
     OPS = (
-        ('eq' , 'is'),
+        ('eq' , 'is' ),
         ('nq' , 'is not'),
         ('ex' , 'exists'),
         ('nx' , 'does not exist'),
@@ -15,19 +15,20 @@ class Check(models.Model):
         ('em', 'is empty'),
         )
 
-    title = models.CharField(max_length=100)
-    desc  = models.TextField(blank=True)
-    fields = models.CharField(max_length=100)
-    operator = models.CharField(max_length=2, choices=OPS)
-    values   = models.CharField(max_length=100, blank=True)
+    title       = models.CharField(max_length=100, verbose_name="Check Title" )
+    description = models.TextField(blank=True, verbose_name="Check Description")
+    field       = models.CharField(max_length=100)
+    subfield    = models.CharField(max_length=100,blank=True)
+    operator    = models.CharField(max_length=2, choices=OPS)
+    values      = models.CharField(max_length=100, blank=True)
 
     def __unicode__(self):
         return self.title
 
 class Report(models.Model):
-    title       = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    creator     = models.ForeignKey(User)
+    title       = models.CharField(max_length=100, verbose_name="Report Title")
+    description = models.TextField(blank=True, verbose_name="Report Description")
+    creator     = models.ForeignKey(User, null=True,blank=True,verbose_name="Report Creator")
     checks      = models.ManyToManyField(Check, related_name='+')
     using       = models.ManyToManyField(User, related_name='+')
 

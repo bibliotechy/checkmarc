@@ -27,28 +27,34 @@ def add_report(request):
         if request.user.is_authenticated():
             user = request.user
         else:
-            user = None
+            user = User(name="anonymous")
 
-        if report_data.is_valid():
+        if report_data.is_valid() and checks_data.is_valid():
             title       = report_data.cleaned_data['title']
             description = report_data.cleaned_data['description']
             creator     = user
-        if checks_data.is_valid():
-
-
 
         else:
             error_form = ReportForm(request.POST)
             return render_to_response('reports.html',{'form' : error_form}, context_instance=RequestContext(request))
 
-
         report = Report(title=title, description = description, creator = creator)
         report.save()
 
 
-        for check in checks:
 
-            report.checks.add(check)
+        for i in range(0,checks_data.total_form_count()):
+            check_title = checks_data[i].cleaned_data['title']
+            description = checks_data[i].cleaned_data['description']
+            field       = checks_data[i].cleaned_data['field']
+            subfield    = checks_data[i].cleaned_data['subfield']
+            operator    = checks_data[i].cleaned_data['operator']
+            values      = checks_data[i].cleaned_data['values']
+
+            new_check = Check(title=check_title, description=description,field=field,subfield=subfield,operator=operator,values=values)
+            new_check.save()
+
+            report.checks.add(new_check)
             report.save()
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
@@ -78,13 +84,14 @@ def checks(request):
         data= CheckForm(request.POST)
 
         if data.is_valid():
-            title    = data.cleaned_data['title']
-            desc     = data.cleaned_data['desc']
-            fields   = data.cleaned_data['fields']
-            operator = data.cleaned_data['operator']
-            values    = data.cleaned_data['values']
+            title       = data.cleaned_data['title']
+            description = data.cleaned_data['desc']
+            field       = data.cleaned_data['field']
+            subfield    = data.cleaned_data['subfield']
+            operator    = data.cleaned_data['operator']
+            values      = data.cleaned_data['values']
 
-        new_check = Check(title=title,desc=desc,fields=fields,operator=operator,values=values)
+        new_check = Check(title=title,desc=description,field=field,subfield=subfield,operator=operator,values=values)
         new_check.save()
 
         return HttpResponseRedirect('/checks/') # Redirect after POST
@@ -125,25 +132,112 @@ def run_report(request, report_id):
 
 
 
-def operator_logic(r, op, fields, values):
+def operator_logic(r, op, field, subfield='',values=''):
 
     response = "Haven't defined that yet"
 
-    if not r[fields]:
-        response = fields + ' is not defined'
+    if not r[field]:
+        response = field + ' does not exist'
     else:
         pass
 
-    if op == 'em':
-        if r[fields] == '':
-            response =  fields + ' is empty'
+
+    if op == 'eq':
+        if not subfield:
+            if r[field] == values:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
         else:
-            response = "Boom"
+            if r[field][subfield] == values:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
 
     if op == 'nq':
-        if r[fields] != values:
-            response =  fields + " is not equal to " + values
+        if not subfield:
+            if r[field] != values:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
         else:
-            response = "BOOOOOOOOM"
+            if r[field][subfield] != values:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
 
+
+    if op == 'ex':
+        if not subfield:
+            if r[field]:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+        else:
+            if r[field][subfield]:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+
+    if op == 'nx':
+        if subfield:
+            if not r[field][subfield]:
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+
+    if op == 'cn':
+        if not subfield:
+            if r[field] in values.split(','):
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+        else:
+            if r[field][subfield] in values.split(','):
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+
+    if op == 'dc':
+        if not subfield:
+            if r[field] not in values.split(','):
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+        else:
+            if r[field][subfield] not in values.split(','):
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+
+    if op == 'em':
+        if not subfield:
+            if r[field] == '':
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+        else:
+            if r[field][subfield] == '':
+                response = response_builder(op, field, subfield, values)
+            else:
+                response = "BOOOOOOM"
+
+        return response
+
+
+def response_builder(op, field, subfield="", values=""):
+    response = field + " "
+    if subfield:
+        response += subfield + " "
+    response += [Check.OPS[index] for index, check in enumerate(Check.OPS) if op in check][0][1] + " "
+    response += values + "."
     return response
+
+
+
+
+
+
+
+
+('em', 'is empty'),
