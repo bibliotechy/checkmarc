@@ -1,0 +1,20 @@
+#content {
+    margin-top: 50px;
+}
+
+
+.description {
+    padding: 10px;
+}
+
+.actions > div{
+    float: left;;
+}
+
+.left {
+    float: left;
+}
+
+fieldset.check {
+    border: 1px solid #999;
+}

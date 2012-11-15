@@ -6,7 +6,7 @@ from django import forms
 class Check(models.Model):
 
     OPS = (
-        ('eq' , 'is' ),
+        ('eq' , 'is'),
         ('nq' , 'is not'),
         ('ex' , 'exists'),
         ('nx' , 'does not exist'),
@@ -15,15 +15,28 @@ class Check(models.Model):
         ('em', 'is empty'),
         )
 
-    title       = models.CharField(max_length=100, verbose_name="Check Title" )
+    title       = models.CharField(max_length=100, verbose_name="Check Title", blank=True )
     description = models.TextField(blank=True, verbose_name="Check Description")
-    field       = models.CharField(max_length=100)
-    subfield    = models.CharField(max_length=100,blank=True)
+    field       = models.CharField(max_length=10, help_text="A MARC field, (or header")
+    subfield    = models.CharField(max_length=10,blank=True)
+    indicator   = models.CharField(max_length=10,blank=True, choices=(('1','indicator1'),('2','indicator2'),))
     operator    = models.CharField(max_length=2, choices=OPS)
-    values      = models.CharField(max_length=100, blank=True)
+    values      = models.CharField(max_length=20, blank=True)
 
     def __unicode__(self):
-        return self.title
+        res = self.field
+
+        if self.subfield:
+            res += " " + self.subfield
+
+        res += " " +self.get_operator_display()
+
+        if self.values:
+            res += " " +self.values
+
+        return res
+
+
 
 class Report(models.Model):
     title       = models.CharField(max_length=100, verbose_name="Report Title")

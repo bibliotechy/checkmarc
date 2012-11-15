@@ -1,4 +1,6 @@
 from django.conf.urls import patterns, include, url
+from django.views.generic import ListView
+from check.models import *
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -9,6 +11,7 @@ urlpatterns = patterns('check.views',
     url(r'^$', 'home'),
     url(r'^checks/$','checks'),
 
+    url(r'^report/list/$', 'list_reports'),
     url(r'^report/add/$', 'add_report'),
     url(r'^report/(?P<report_id>\d+)/$','report'),
     url(r'^report/(?P<report_id>\d+)/run/$','run_report'),

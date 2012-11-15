@@ -1,3 +1,7 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
 {% if results %}
 
   {% for result, values in results.items %}
@@ -9,3 +13,5 @@
   {% endfor %}
 
 {% endif %}
+
+{% endblock %}

@@ -2,14 +2,21 @@ from check.models import *
 from django.shortcuts import render_to_response, HttpResponseRedirect, get_object_or_404
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
+from django.forms.models import model_to_dict
 import pymarc
+
 
 def home(request):
     return render_to_response('home.html');
 
+
+def list_reports(request):
+    reports = Report.objects.order_by('title')[:10]
+    return render_to_response('list_reports.html', {'reports' : reports},  context_instance=RequestContext(request))
+
 def report(request, report_id):
     report = get_object_or_404(Report, pk=report_id)
-    return render_to_response('report.html',{'report':report})
+    return render_to_response('report.html',{'report':report},  context_instance=RequestContext(request))
 
 def add_report(request):
     check_formset = formset_factory(CheckForm)
@@ -27,7 +34,7 @@ def add_report(request):
         if request.user.is_authenticated():
             user = request.user
         else:
-            user = User(name="anonymous")
+            user = None
 
         if report_data.is_valid() and checks_data.is_valid():
             title       = report_data.cleaned_data['title']
@@ -41,17 +48,10 @@ def add_report(request):
         report = Report(title=title, description = description, creator = creator)
         report.save()
 
-
-
         for i in range(0,checks_data.total_form_count()):
-            check_title = checks_data[i].cleaned_data['title']
-            description = checks_data[i].cleaned_data['description']
-            field       = checks_data[i].cleaned_data['field']
-            subfield    = checks_data[i].cleaned_data['subfield']
-            operator    = checks_data[i].cleaned_data['operator']
-            values      = checks_data[i].cleaned_data['values']
 
-            new_check = Check(title=check_title, description=description,field=field,subfield=subfield,operator=operator,values=values)
+            new_check = _build_new_check(checks_data, i)
+
             new_check.save()
 
             report.checks.add(new_check)
@@ -59,14 +59,70 @@ def add_report(request):
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
+def _build_new_check(checks_data, i):
+    check_title = checks_data[i].cleaned_data['title']
+    description = checks_data[i].cleaned_data['description']
+    field       = checks_data[i].cleaned_data['field']
+    subfield    = checks_data[i].cleaned_data['subfield']
+    indicator   = checks_data[i].cleaned_data['indicator']
+    operator    = checks_data[i].cleaned_data['operator']
+    values      = checks_data[i].cleaned_data['values']
+
+    new_check = Check(title=check_title,
+                      description=description,
+                      field=field,
+                      subfield=subfield,
+                      indicator=indicator,
+                      operator=operator,
+                      values=values)
+    return new_check
+
+
 def edit_report(request, report_id=''):
+    check_formset = formset_factory(CheckForm)
     if request.method == 'GET':
         report = get_object_or_404(Report, pk=report_id)
-        form = ReportForm(instance=report)
-        return render_to_response('reports.html',{'form':form})
+        form = ReportForm(instance=report, prefix="report")
+        formset  = check_formset(initial=[model_to_dict(check) for check in report.checks.all()] ,prefix='checks')
+
+        return render_to_response('reports.html',{'report_form':form,'checks' : formset}, context_instance=RequestContext(request))
 
     if request.method == 'POST':
-        return
+        report = Report(pk=report_id)
+        report_data = ReportForm(request.POST, prefix='report')
+        checks_data = check_formset(request.POST, prefix='checks')
+
+        if report_data.is_valid() and checks_data.is_valid():
+            report.title       = report_data.cleaned_data['title']
+            report.description = report_data.cleaned_data['description']
+
+            report.save()
+
+            for i in range(0,checks_data.total_form_count()):
+                try:
+                    if report.checks.all()[i]:
+                        report.checks.all()[i].check_title = checks_data[i].cleaned_data['title']
+                        report.checks.all()[i].description = checks_data[i].cleaned_data['description']
+                        report.checks.all()[i].field       = checks_data[i].cleaned_data['field']
+                        report.checks.all()[i].subfield    = checks_data[i].cleaned_data['subfield']
+                        report.checks.all()[i].indicator   = checks_data[i].cleaned_data['indicator']
+                        report.checks.all()[i].operator    = checks_data[i].cleaned_data['operator']
+                        report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
+
+                        report.checks.all()[i].save()
+
+                except IndexError:
+                    new_check = _build_new_check()
+                    new_check.save()
+
+                    report.checks.add(new_check)
+            report.save()
+
+        else:
+            error_form = ReportForm(request.POST)
+            return render_to_response('reports.html',{'form' : error_form}, context_instance=RequestContext(request))
+
+        return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
 def fork_report(request, report_id):
 
@@ -88,10 +144,11 @@ def checks(request):
             description = data.cleaned_data['desc']
             field       = data.cleaned_data['field']
             subfield    = data.cleaned_data['subfield']
+            indicator   = data.cleaned_data['indicator']
             operator    = data.cleaned_data['operator']
             values      = data.cleaned_data['values']
 
-        new_check = Check(title=title,desc=description,field=field,subfield=subfield,operator=operator,values=values)
+        new_check = Check(title=title,desc=description,field=field,subfield=subfield,indicator=indicator,operator=operator,values=values)
         new_check.save()
 
         return HttpResponseRedirect('/checks/') # Redirect after POST
@@ -101,11 +158,12 @@ def checks(request):
 
 def run_report(request, report_id):
     if request.method == 'GET':
+        report = Report(pk=report_id)
         run_report = RunReportForm(report_id=report_id)
-        return render_to_response('run_report.html',{'run_report' : run_report}, context_instance=RequestContext(request))
+        return render_to_response('run_report.html',{'run_report' : run_report, 'report' : report}, context_instance=RequestContext(request))
 
     if request.method == 'POST':
-        data = RunReportForm(request.POST, request.FILES)
+        data = RunReportForm(report_id, request.POST, request.FILES)
         results = {}
 
         if data.is_valid():
@@ -118,13 +176,15 @@ def run_report(request, report_id):
             reader = pymarc.MARCReader(file)
 
             for r in reader:
-                results[r.title()] = {}
+
+                name = r.title()
+                results[name] = {}
                 for check in report.checks.all():
-                    results[r.title()][check.fields] =  operator_logic(r, check.operator, check.fields, check.values)
-            return render_to_response('result.html',{'results': results })
+                    results[name][check.field] =  operator_logic(r, check.operator, check.field, check.subfield, check.indicator, check.values)
+            return render_to_response('result.html',{'results': results },  context_instance=RequestContext(request))
 
         else:
-            error_form = RunReportForm(request.POST, request.FILES)
+            error_form = RunReportForm(report_id, request.POST, request.FILES)
             return render_to_response('run_report.html',{'run_report' : error_form}, context_instance=RequestContext(request))
 
 
@@ -132,9 +192,9 @@ def run_report(request, report_id):
 
 
 
-def operator_logic(r, op, field, subfield='',values=''):
+def operator_logic(r, op, field, subfield='',indicator='',values=''):
 
-    response = "Haven't defined that yet"
+    response = ""
 
     if not r[field]:
         response = field + ' does not exist'
@@ -147,24 +207,24 @@ def operator_logic(r, op, field, subfield='',values=''):
             if r[field] == values:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
         else:
             if r[field][subfield] == values:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
     if op == 'nq':
         if not subfield:
             if r[field] != values:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
         else:
             if r[field][subfield] != values:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
 
     if op == 'ex':
@@ -172,57 +232,57 @@ def operator_logic(r, op, field, subfield='',values=''):
             if r[field]:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
         else:
             if r[field][subfield]:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
     if op == 'nx':
         if subfield:
             if not r[field][subfield]:
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
     if op == 'cn':
         if not subfield:
             if r[field] in values.split(','):
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
         else:
             if r[field][subfield] in values.split(','):
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
     if op == 'dc':
         if not subfield:
             if r[field] not in values.split(','):
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
         else:
             if r[field][subfield] not in values.split(','):
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
     if op == 'em':
         if not subfield:
             if r[field] == '':
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
         else:
             if r[field][subfield] == '':
                 response = response_builder(op, field, subfield, values)
             else:
-                response = "BOOOOOOM"
+                pass
 
-        return response
+    return response
 
 
 def response_builder(op, field, subfield="", values=""):
@@ -230,14 +290,7 @@ def response_builder(op, field, subfield="", values=""):
     if subfield:
         response += subfield + " "
     response += [Check.OPS[index] for index, check in enumerate(Check.OPS) if op in check][0][1] + " "
-    response += values + "."
+    if values:
+        response += values + ""
     return response
 
-
-
-
-
-
-
-
-('em', 'is empty'),

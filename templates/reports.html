@@ -1,13 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
 {% if report_form %}
 
-<form action="{% if form.instance.pk %}report/edit/{{ fornstance.pk }}/{% endif %}" method="post">{% csrf_token %}
-    {{ report_form }}
+<form action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
+    {{ report_form.as_p }}
     {% if checks %}
+        {{ checks.management_form }}
+        {% for check in checks  %}
+            <fieldset class="check">
+               <div class="left">{{ check.title.label }} : {{ check.title }}</div>
+                <div class="left">{{ check.description.label }} : {{ check.description }}</div>
+                <div class="left">{{ check.field.label}}{{ check.field }}</div>
+                <div class="left">{{ check.subfield.label }}{{ check.subfield }}</div>
+                <div class="left">{{ check.indicator.label  }}{{ check.indicator }}</div>
+                <div class="left">{{ check.operator.label  }}{{ check.operator }}</div>
+                <div class="left">{{ check.values.label }}{{ check.values }}</div>
 
-        {{ checks }}
+            </fieldset>
+        {% endfor %}
 
     {% endif %}
     <input type="submit" value="Submit" />
 </form>
 
 {% endif %}
+{% endblock %}
