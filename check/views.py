@@ -3,6 +3,7 @@ from django.shortcuts import render_to_response, HttpResponseRedirect, get_objec
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
 from django.forms.models import model_to_dict
+from ast import literal_eval
 import pymarc
 
 
@@ -180,7 +181,7 @@ def run_report(request, report_id):
                 name = r.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    results[name][check.field] =  operator_logic(r, check.operator, check.field, check.subfield, check.indicator, check.values)
+                    results[name][check.field] =  logic_builder(r, check.field, check.operator,check.subfield,check.indicator, check.values)
             return render_to_response('result.html',{'results': results },  context_instance=RequestContext(request))
 
         else:
@@ -289,8 +290,67 @@ def response_builder(op, field, subfield="", values=""):
     response = field + " "
     if subfield:
         response += subfield + " "
-    response += [Check.OPS[index] for index, check in enumerate(Check.OPS) if op in check][0][1] + " "
+    response += [check[1] for check in Check.OPS if op in check][0] + " "
     if values:
         response += values + ""
     return response
 
+
+def logic_builder(r, field, op, subfield='', indicator='', values='' ):
+
+    if not subfield:
+        if eval(op+'(r,field,subfield,values)'):
+            response = response_builder(op,field,subfield,values)
+        else:
+            pass
+    else:
+        fun = "sub" + op
+        if eval(fun+'(r,field,subfield,values)'):
+            response = response_builder(op,field,subfield,values)
+        else:
+            pass
+
+    return response
+
+
+def eq(r, field, subfield='', values='' ):
+    return r[field].value() == values
+
+def nq(r, field, subfield='', values=''):
+    return r[field].value() != values
+
+def ex(r, field, subfield='', values='' ):
+    return  bool(r[field])
+
+def nx(r, field, subfield='', values='' ):
+    return bool(not r[field])
+
+def cn(r, field, subfield='', values='' ):
+    return bool(r[field].value() in values.split(","))
+
+def dc(r, field, subfield='', values='' ):
+    return bool(r[field].value() not in values.split(","))
+
+def em(r, field, subfield='', values='' ):
+    return bool(r[field].value() == "")
+
+def subeq(r, field, subfield='', values='' ):
+    return r[field][subfield] == values
+
+def subnq(r, field, subfield='', values=''):
+    return r[field][subfield] != values
+
+def subex(r, field, subfield='', values='' ):
+    return  bool(r[field][subfield])
+
+def subnx(r, field, subfield='', values='' ):
+    return bool(not r[field][subfield])
+
+def subcn(r, field, subfield='', values='' ):
+    return bool(r[field][subfield] in values.split(","))
+
+def subdc(r, field, subfield='', values='' ):
+    return bool(r[field][subfield] not in values.split(","))
+
+def subem(r, field, subfield='', values='' ):
+    return bool(r[field][subfield] == "")

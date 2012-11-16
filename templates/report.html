@@ -6,47 +6,7 @@
 
 {% block content %}
 
-
-
-
-    <h2><a href="/report/{{ report.pk }}/">{{ report.title }}</a></h2>
-    <p class="description">{{ report.description }}</p>
-    <div class="accordion" id="accordion2">
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseOne">
-                    Checks
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body collapse in">
-                <div class="accordion-inner">
-                    {%  for check in report.checks.all %}
-
-                        <div>{{ check }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-
-
-
-
-    <div class="report actions btn-group">
-        <div>
-            <a class="btn" href="/report/{{ report.pk }}/run/">Run report</a>
-        </div>
-        <div>
-            <a class="btn" href="/report/{{ report.pk }}/edit/">Edit report</a>
-        </div>
-        <div>
-            <a class="btn" href="/report/{{ report.pk }}/fork/">Fork report</a>
-        </div>
-    </div>
-
-
+{% include 'report_snippet.html' %}
 
 {% endblock %}
 
