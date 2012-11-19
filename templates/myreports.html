@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% if reports %}
+    {% block title %}{{ user.name }}'s Reports{% endblock title%}
+
+
+    {% block content %}
+        {% for report in reports %}
+            {% include 'report_snippet.html' %}
+        {% endfor %}
+    {% endblock %}
+
+{% endif %}

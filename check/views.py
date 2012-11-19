@@ -3,7 +3,7 @@ from django.shortcuts import render_to_response, HttpResponseRedirect, get_objec
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
 from django.forms.models import model_to_dict
-from ast import literal_eval
+from django.contrib.auth.decorators import login_required
 import pymarc
 
 
@@ -60,31 +60,17 @@ def add_report(request):
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
-def _build_new_check(checks_data, i):
-    check_title = checks_data[i].cleaned_data['title']
-    description = checks_data[i].cleaned_data['description']
-    field       = checks_data[i].cleaned_data['field']
-    subfield    = checks_data[i].cleaned_data['subfield']
-    indicator   = checks_data[i].cleaned_data['indicator']
-    operator    = checks_data[i].cleaned_data['operator']
-    values      = checks_data[i].cleaned_data['values']
-
-    new_check = Check(title=check_title,
-                      description=description,
-                      field=field,
-                      subfield=subfield,
-                      indicator=indicator,
-                      operator=operator,
-                      values=values)
-    return new_check
 
 
+@login_required()
 def edit_report(request, report_id=''):
+    user = request.user
     check_formset = formset_factory(CheckForm)
     if request.method == 'GET':
         report = get_object_or_404(Report, pk=report_id)
-        form = ReportForm(instance=report, prefix="report")
-        formset  = check_formset(initial=[model_to_dict(check) for check in report.checks.all()] ,prefix='checks')
+        if report.creator and report.creator == user:
+            form = ReportForm(instance=report, prefix="report")
+            formset  = check_formset(initial=[model_to_dict(check) for check in report.checks.all()] ,prefix='checks')
 
         return render_to_response('reports.html',{'report_form':form,'checks' : formset}, context_instance=RequestContext(request))
 
@@ -96,26 +82,16 @@ def edit_report(request, report_id=''):
         if report_data.is_valid() and checks_data.is_valid():
             report.title       = report_data.cleaned_data['title']
             report.description = report_data.cleaned_data['description']
-
             report.save()
 
             for i in range(0,checks_data.total_form_count()):
                 try:
-                    if report.checks.all()[i]:
-                        report.checks.all()[i].check_title = checks_data[i].cleaned_data['title']
-                        report.checks.all()[i].description = checks_data[i].cleaned_data['description']
-                        report.checks.all()[i].field       = checks_data[i].cleaned_data['field']
-                        report.checks.all()[i].subfield    = checks_data[i].cleaned_data['subfield']
-                        report.checks.all()[i].indicator   = checks_data[i].cleaned_data['indicator']
-                        report.checks.all()[i].operator    = checks_data[i].cleaned_data['operator']
-                        report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
-
-                        report.checks.all()[i].save()
+                    _build_new_check(checks_data,i,'edit', report)
+                    report.checks.all()[i].save()
 
                 except IndexError:
-                    new_check = _build_new_check()
+                    new_check = _build_new_check(checks_data, i)
                     new_check.save()
-
                     report.checks.add(new_check)
             report.save()
 
@@ -129,6 +105,11 @@ def fork_report(request, report_id):
 
     return
 
+@login_required()
+def myreports(request):
+    user = request.user
+    reports = Report.objects.filter(creator=user)
+    return  render_to_response('myreports.html',{'reports':reports}, context_instance= RequestContext(request))
 
 
 def checks(request):
@@ -155,8 +136,6 @@ def checks(request):
         return HttpResponseRedirect('/checks/') # Redirect after POST
 
 
-
-
 def run_report(request, report_id):
     if request.method == 'GET':
         report = Report(pk=report_id)
@@ -169,19 +148,15 @@ def run_report(request, report_id):
 
         if data.is_valid():
             report = data.cleaned_data['report']
-
-
             f = request.FILES['file']
             file = f.read()
-
             reader = pymarc.MARCReader(file)
 
             for r in reader:
-
                 name = r.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    results[name][check.field] =  logic_builder(r, check.field, check.operator,check.subfield,check.indicator, check.values)
+                    results[name][check.field] =  _logic_builder(r, check.field, check.operator,check.subfield,check.indicator, check.values)
             return render_to_response('result.html',{'results': results },  context_instance=RequestContext(request))
 
         else:
@@ -189,104 +164,36 @@ def run_report(request, report_id):
             return render_to_response('run_report.html',{'run_report' : error_form}, context_instance=RequestContext(request))
 
 
+def _build_new_check(checks_data, i , type='new', report=None):
+    if type == 'new':
 
+        check_title = checks_data[i].cleaned_data['title']
+        description = checks_data[i].cleaned_data['description']
+        field       = checks_data[i].cleaned_data['field']
+        subfield    = checks_data[i].cleaned_data['subfield']
+        indicator   = checks_data[i].cleaned_data['indicator']
+        operator    = checks_data[i].cleaned_data['operator']
+        values      = checks_data[i].cleaned_data['values']
 
+        new_check = Check(title=check_title,
+            description=description,
+            field=field,
+            subfield=subfield,
+            indicator=indicator,
+            operator=operator,
+            values=values)
+        return new_check
 
+    if type == 'edit':
+        report.checks.all()[i].check_title = checks_data[i].cleaned_data['title']
+        report.checks.all()[i].description = checks_data[i].cleaned_data['description']
+        report.checks.all()[i].field       = checks_data[i].cleaned_data['field']
+        report.checks.all()[i].subfield    = checks_data[i].cleaned_data['subfield']
+        report.checks.all()[i].indicator   = checks_data[i].cleaned_data['indicator']
+        report.checks.all()[i].operator    = checks_data[i].cleaned_data['operator']
+        report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
 
-def operator_logic(r, op, field, subfield='',indicator='',values=''):
-
-    response = ""
-
-    if not r[field]:
-        response = field + ' does not exist'
-    else:
-        pass
-
-
-    if op == 'eq':
-        if not subfield:
-            if r[field] == values:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-        else:
-            if r[field][subfield] == values:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-    if op == 'nq':
-        if not subfield:
-            if r[field] != values:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-        else:
-            if r[field][subfield] != values:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-
-    if op == 'ex':
-        if not subfield:
-            if r[field]:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-        else:
-            if r[field][subfield]:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-    if op == 'nx':
-        if subfield:
-            if not r[field][subfield]:
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-    if op == 'cn':
-        if not subfield:
-            if r[field] in values.split(','):
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-        else:
-            if r[field][subfield] in values.split(','):
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-    if op == 'dc':
-        if not subfield:
-            if r[field] not in values.split(','):
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-        else:
-            if r[field][subfield] not in values.split(','):
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-    if op == 'em':
-        if not subfield:
-            if r[field] == '':
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-        else:
-            if r[field][subfield] == '':
-                response = response_builder(op, field, subfield, values)
-            else:
-                pass
-
-    return response
-
-
-def response_builder(op, field, subfield="", values=""):
+def _response_builder(op, field, subfield="", values=""):
     response = field + " "
     if subfield:
         response += subfield + " "
@@ -295,62 +202,129 @@ def response_builder(op, field, subfield="", values=""):
         response += values + ""
     return response
 
+def _logic_builder(r, field, op, subfield='', indicator='', values='' ):
 
-def logic_builder(r, field, op, subfield='', indicator='', values='' ):
+    if op == 'eq':
+        response = _eq(r,field,op,subfield,values)
 
-    if not subfield:
-        if eval(op+'(r,field,subfield,values)'):
-            response = response_builder(op,field,subfield,values)
-        else:
-            pass
-    else:
-        fun = "sub" + op
-        if eval(fun+'(r,field,subfield,values)'):
-            response = response_builder(op,field,subfield,values)
-        else:
-            pass
+    elif op == 'nq':
+        response = _nq(r,field,op,subfield,values)
+
+    elif op == 'ex':
+        response = _ex(r,field,op,subfield,values)
+
+    elif op == 'nx':
+        response = _nx(r,field,op,subfield,values)
+
+
+    elif op == 'cn':
+        response = _cn(r,field,op,subfield,values)
+
+    elif op == 'dc':
+        response = _dc(r,field,op,subfield,values)
+
+    elif op == 'em':
+        response = _em(r,field,op,subfield,values)
 
     return response
 
+def _eq(r, field, op, subfield='', values='' ):
+    if not subfield:
+        if r[field].value() == values:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
+        if r[field][subfield] == values:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
 
-def eq(r, field, subfield='', values='' ):
-    return r[field].value() == values
+    return response
 
-def nq(r, field, subfield='', values=''):
-    return r[field].value() != values
+def _nq(r, field,op, subfield='', values=''):
+    if not subfield:
+        if r[field].value() != values:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
+        if r[field][subfield] != values:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
 
-def ex(r, field, subfield='', values='' ):
-    return  bool(r[field])
+    return response
 
-def nx(r, field, subfield='', values='' ):
-    return bool(not r[field])
+def _ex(r, field, op, subfield='', values='' ):
+    if not subfield:
+        if r[field]:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
 
-def cn(r, field, subfield='', values='' ):
-    return bool(r[field].value() in values.split(","))
+        if r[field][subfield]:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
 
-def dc(r, field, subfield='', values='' ):
-    return bool(r[field].value() not in values.split(","))
+    return response
 
-def em(r, field, subfield='', values='' ):
-    return bool(r[field].value() == "")
+def _nx(r, field, op, subfield='', values='' ):
+    if not subfield:
+        if not r[field]:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
+        if not r[field][subfield]:
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
 
-def subeq(r, field, subfield='', values='' ):
-    return r[field][subfield] == values
 
-def subnq(r, field, subfield='', values=''):
-    return r[field][subfield] != values
+    return response
 
-def subex(r, field, subfield='', values='' ):
-    return  bool(r[field][subfield])
+def _cn(r, field, op, subfield='', values='' ):
+    if not subfield:
+        if r[field].value() in values.split(","):
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
+        if not r[field][subfield] in values.split(","):
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
 
-def subnx(r, field, subfield='', values='' ):
-    return bool(not r[field][subfield])
 
-def subcn(r, field, subfield='', values='' ):
-    return bool(r[field][subfield] in values.split(","))
+    return response
 
-def subdc(r, field, subfield='', values='' ):
-    return bool(r[field][subfield] not in values.split(","))
+def _dc(r, field, op, subfield='', values='' ):
+    if not subfield:
+        if r[field].value() not in values.split(","):
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
+        if r[field][subfield] not in values.split(","):
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
 
-def subem(r, field, subfield='', values='' ):
-    return bool(r[field][subfield] == "")
+    return response
+
+def _em(r, field, op, subfield='', values='' ):
+    if not subfield:
+        if r[field].value() == "":
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+    else:
+        if r[field][subfield] == "":
+            response = _response_builder(op,field,subfield,values)
+        else:
+            response = ''
+
+    return response

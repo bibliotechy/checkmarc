@@ -17,6 +17,8 @@ urlpatterns = patterns('check.views',
     url(r'^report/(?P<report_id>\d+)/run/$','run_report'),
     url(r'^report/(?P<report_id>\d+)/edit/$', 'edit_report'),
     url(r'^report/(?P<report_id>\d+)/fork/$', 'fork_report'),
+
+    url(r'^myreports/$','myreports'),
     # url(r'^checkmarc/', include('checkmarc.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
