@@ -62,16 +62,17 @@ def add_report(request):
 
 
 
-@login_required()
 def edit_report(request, report_id=''):
     user = request.user
-    check_formset = formset_factory(CheckForm)
+    check_formset = formset_factory(CheckForm, can_delete=True, can_order=True)
     if request.method == 'GET':
         report = get_object_or_404(Report, pk=report_id)
-        if report.creator and report.creator == user:
-            form = ReportForm(instance=report, prefix="report")
-            formset  = check_formset(initial=[model_to_dict(check) for check in report.checks.all()] ,prefix='checks')
-
+        form = ReportForm(instance=report, prefix="report")
+        checkforms = [model_to_dict(check) for check in report.checks.all()]
+        new_form = {'checks-TOTAL_FORMS': unicode(len(checkforms)),'checks-INITIAL_FORMS': unicode(len(checkforms)),'checks-MAX_NUM_FORMS': u''}
+        for index,checkform in enumerate(checkforms):
+            map(lambda key,value, : new_form.update({'checks-'+str(index)+'-'+key : value}), checkform.iterkeys(), checkform.itervalues())
+        formset  = check_formset(new_form,prefix='checks', )
         return render_to_response('reports.html',{'report_form':form,'checks' : formset}, context_instance=RequestContext(request))
 
     if request.method == 'POST':
