@@ -9,6 +9,12 @@ admin.autodiscover()
 urlpatterns = patterns('check.views',
     # Examples:
     url(r'^$', 'home'),
+
+
+
+    url(r'^login/$', 'login'),
+    url(r'^logout/$', 'logout'),
+
     url(r'^checks/$','checks'),
 
     url(r'^report/list/$', 'list_reports'),
@@ -19,6 +25,8 @@ urlpatterns = patterns('check.views',
     url(r'^report/(?P<report_id>\d+)/fork/$', 'fork_report'),
 
     url(r'^myreports/$','myreports'),
+
+    url(r'', include('social_auth.urls')),
     # url(r'^checkmarc/', include('checkmarc.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

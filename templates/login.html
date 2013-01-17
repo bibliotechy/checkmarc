@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="span3">&nbsp;</div>
+        <div class="span10 bigtext">
+            <br>
+            <br>
+            <br>
+            <p>
+              If you want to save your reports for later, you'll need to login with an account from one of these fine services.
+            </p>
+
+            <p>
+                So go ahead and log in with one of those by clicking on one of the
+                icons below:
+            </p>
+
+            <br>
+            <br>
+
+            <div style="text-align: center;">
+                <a href="{% url socialauth_begin "twitter" %}?next={{ next }}"><img src="{{ STATIC_URL }}images/twitter_64.png"></a>
+                <a href="{% url socialauth_begin "facebook" %}?next={{ next }}"><img src="{{ STATIC_URL }}images/facebook_64.png"></a>
+                <a href="{% url socialauth_begin "github" %}?next={{ next }}"><img src="{{ STATIC_URL }}images/github_64.png"></a>
+                <a href="{% url socialauth_begin "google" %}?next={{ next }}"><img src="{{ STATIC_URL }}images/google_64.png"></a>
+            </div>
+
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+
+        </div>
+    </div>
+
+{% endblock %}

@@ -2,8 +2,8 @@
 <html>
 <head>
     <title>checkmarc : {% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/main.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/main.css">
     <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.formset.min.js"></script>
@@ -27,19 +27,20 @@
                         <li {% ifequal request.path "/about/" %} class="active" {% endifequal %}><a href="/about">About</a></li>
                     </ul>
                     <ul class="secondary-nav">
-                        {% if request.user.is_authenticated %}
+                        {% if request.user.is_logged_in %}
                             <li>
-                                <a style="color: #ffff00;" href="{% url user request.user.username %}">
+
                                     <img class="tiny-avatar" src="{{ request.user.profile.pic_url }}">
                                     {{ request.user.username }}
-                                </a>
+
                             </li>
                             <li>
-                                <a href="/logout/">Logout</a>
+                                <a href="/logout">Logout</a>
                             </li>
                         {% else %}
-                            <li><a href="/login/">Login</a></li>
+                            <li><a href="/login">Login</a></li>
                         {% endif %}
+
                     </ul>
                 </div>
             </div>

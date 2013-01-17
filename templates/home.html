@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}
+checkmarc - Quickly runchecks on marc fies
+{% endblock %}
+
+
+
+
+{% block content %}
+    {% if request.user.is_authenticated %}
+
+        Hi {{ request.user.username }}
+
+    {% endif%}
+
+    <h2>245 $a : checkmarc</h2>
+ <p>A simple way to create, reuse, and share reports on marc files. </p>
+  {{ request.user }}
+{% endblock %}

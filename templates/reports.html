@@ -4,18 +4,22 @@
 {% if report_form %}
 
 <form action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
-    {{ report_form.as_p }}
+    <div class="report-fields">
+        <fieldset>
+          {{ report_form.as_p  }}
+        </fieldset>
+    </div>
     {% if checks %}
         {{ checks.management_form }}
         {% for check in checks  %}
             <fieldset class="check">
                <div class="left">{{ check.title.label }} : {{ check.title }}</div>
                 <div class="left">{{ check.description.label }} : {{ check.description }}</div>
-                <div class="left">{{ check.field.label}}{{ check.field }}</div>
-                <div class="left">{{ check.subfield.label }}{{ check.subfield }}</div>
-                <div class="left">{{ check.indicator.label  }}{{ check.indicator }}</div>
-                <div class="left">{{ check.operator.label  }}{{ check.operator }}</div>
-                <div class="left">{{ check.values.label }}{{ check.values }}</div>
+                <div class="left short">{{ check.field.label}}{{ check.field }}</div>
+                <div class="left short">{{ check.subfield.label }}{{ check.subfield }}</div>
+                <div class="left short">{{ check.indicator.label  }}{{ check.indicator }}</div>
+                <div class="left short">{{ check.operator.label  }}{{ check.operator }}</div>
+                <div class="left short">{{ check.values.label }}{{ check.values }}</div>
 
             </fieldset>
         {% endfor %}

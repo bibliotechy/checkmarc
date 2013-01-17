@@ -1,7 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django import forms
+from django.db.models.signals import post_save
 
+class UserProfile(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    user = models.OneToOneField(User, related_name='profile')
+    pic_url = models.URLField(blank=True)
+    home_url = models.URLField(blank=True)
+    twitter_id = models.CharField(max_length=100, blank=True)
+    facebook_id = models.CharField(max_length=100, blank=True)
+    linkedin_id= models.CharField(max_length=100, blank=True)
+    github_id = models.CharField(max_length=100, blank=True)
+
+def create_user_profile(sender, created, instance, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+post_save.connect(create_user_profile, sender=User)
 
 class Check(models.Model):
 
@@ -19,7 +35,7 @@ class Check(models.Model):
     description = models.TextField(blank=True, verbose_name="Check Description")
     field       = models.CharField(max_length=10, help_text="A MARC field, (or header")
     subfield    = models.CharField(max_length=10,blank=True)
-    indicator   = models.CharField(max_length=10,blank=True, choices=(('1','indicator1'),('2','indicator2'),))
+    indicator   = models.CharField(max_length=10,blank=True, choices=(('0','indicator1'),('1','indicator2'),))
     operator    = models.CharField(max_length=2, choices=OPS)
     values      = models.CharField(max_length=20, blank=True)
 
