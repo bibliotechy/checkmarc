@@ -5,11 +5,13 @@
 {% if results %}
 
   {% for result, values in results.items %}
-   <h2>{{ result }}</h2>
-      {% for k,value in values.items %}
+     {% if values %}
+        <h2>{{ result }}</h2>
+        {% for k,value in values.items %}
 
-          <p>{{ value }}</p>
-      {% endfor %}
+            <p>{{ value }}</p>
+        {% endfor %}
+    {% endif %}
   {% endfor %}
 
 {% endif %}

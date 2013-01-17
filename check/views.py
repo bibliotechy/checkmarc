@@ -133,7 +133,7 @@ def checks(request):
             operator    = data.cleaned_data['operator']
             values      = data.cleaned_data['values']
 
-        new_check = Check(
+            new_check = Check(
                 title     = title,
                 desc      = description,
                 field     = field,
@@ -141,7 +141,7 @@ def checks(request):
                 indicator = indicator,
                 operator  = operator,
                 values    = values)
-        new_check.save()
+            new_check.save()
 
         return HttpResponseRedirect('/checks/') # Redirect after POST
 
@@ -167,12 +167,16 @@ def run_report(request, report_id):
                 name = r.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    results[name][check.field] =  _logic_builder(r, check)
-            return render_to_response('result.html',{'results': results },  context_instance=RequestContext(request))
+                    result = _logic_builder(r, check)
+                    if result:
+                        results[name][check.field] = result
+            return render_to_response('result.html',
+                {'results': results },  context_instance=RequestContext(request))
 
         else:
             error_form = RunReportForm(report_id, request.POST, request.FILES)
-            return render_to_response('run_report.html',{'run_report' : error_form}, context_instance=RequestContext(request))
+            return render_to_response('run_report.html',
+                {'run_report' : error_form}, context_instance=RequestContext(request))
 
 
 def login(request):
@@ -240,33 +244,35 @@ def _response_builder(check):
     response = check.field + " "
     if check.subfield:
         response += check.subfield + " "
-    response += [check[1] for check in Check.OPS if check.op in check][0] + " "
+    if check.indicator:
+        response += check.indicator
+    response += [thecheck[1] for thecheck in Check.OPS if check.operator in thecheck][0] + " "
     if check.values:
         response += check.values + ""
     return response
 
 def _logic_builder(record, check):
 
-    if check.op == 'eq':
+    if check.operator == 'eq':
         response = _equals(record,check)
 
-    elif check.op == 'nq':
+    elif check.operator == 'nq':
         response = _doesNotEqual(record,check)
 
-    elif check.op == 'ex':
+    elif check.operator == 'ex':
         response = _exists(record, check)
 
-    elif check.op == 'nx':
+    elif check.operator == 'nx':
         response = _doesNotExist(record, check)
 
 
-    elif check.op == 'cn':
+    elif check.operator == 'cn':
         response = _contains(record, check)
 
-    elif check.op == 'dc':
+    elif check.operator == 'dc':
         response = _doesNotContain(record, check)
 
-    elif check.op == 'em':
+    elif check.operator == 'em':
         response = _isEmpty(record, check)
 
     return response

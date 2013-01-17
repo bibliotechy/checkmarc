@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>checkmarc : {% block title %}{% endblock %}</title>
+    <link {{ user.username }}>
     <link rel="stylesheet" href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}css/main.css">
     <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
@@ -27,11 +28,11 @@
                         <li {% ifequal request.path "/about/" %} class="active" {% endifequal %}><a href="/about">About</a></li>
                     </ul>
                     <ul class="secondary-nav">
-                        {% if request.user.is_logged_in %}
+                        {% if user.is_authenticated %}
                             <li>
 
-                                    <img class="tiny-avatar" src="{{ request.user.profile.pic_url }}">
-                                    {{ request.user.username }}
+                                    <img class="tiny-avatar" src="{{ user.profile.pic_url }}">
+                                    {{ user.username }}
 
                             </li>
                             <li>
