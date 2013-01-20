@@ -35,22 +35,22 @@ class Check(models.Model):
     description = models.TextField(blank=True, verbose_name="Check Description")
     field       = models.CharField(max_length=10, help_text="A MARC field, (or header")
     subfield    = models.CharField(max_length=10,blank=True)
-    indicator   = models.CharField(max_length=10,blank=True, choices=(('0','indicator1'),('1','indicator2'),))
+    indicator   = models.CharField(max_length=10,blank=True,choices=(('0','indicator1'),('1','indicator2'),),)
     operator    = models.CharField(max_length=2, choices=OPS)
-    values      = models.CharField(max_length=20, blank=True)
+    values      = models.CharField(max_length=100, blank=True)
 
     def __unicode__(self):
-        res = self.field
+        if not self.title:
+          result = self.field
+          if self.subfield:
+            result += " " + self.subfield
+          result += " " +self.get_operator_display()
+          if self.values:
+            result += " " +self.values
+        else:
+            result = self.title
 
-        if self.subfield:
-            res += " " + self.subfield
-
-        res += " " +self.get_operator_display()
-
-        if self.values:
-            res += " " +self.values
-
-        return res
+        return result
 
 
 

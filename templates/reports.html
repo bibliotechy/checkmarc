@@ -5,35 +5,64 @@
     <h1>Create a new report</h1>
 {% if report_form %}
 
-<form action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
+<form class="form-inline" action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
     <div class="report-fields">
         <fieldset>
-            <div class="pull-left">{{ report_form.title.label }}  {{ report_form.title }}</div>
-            <div class="pull-left">{{ report_form.description.label }}  {{ report_form.description }}</div>
+           {{ report_form.title|attr:"placeholder:Report Title"}}
+            {{ report_form.description|attr:"placeholder:Report Description"|attr:"rows:3" }}
         </fieldset>
     </div>
     {% if checks %}
-        {{ checks.management_form }}
+        {{ checks.management_form }}>
         {% for check in checks  %}
+            <div class="check clearfix" style="width: 100%;">
+            <div class="pull-left"><p>Check <span class="check-number">{{ forloop.counter }}</span></p></div>
+            <div class="pull-left">
             <fieldset class="check">
-               <div class="pull-left">
-                   <div class="pull-left">
-                       {{ check.title|attr:"placeholder:Title"|add_class:"input-small" }}
-                   </div>
-                   <div class="pull-left">{{ check.description|attr:"placeholder:Description"|attr:"rows:3" }}</div>
-               </div>
-                <div class="pull-left short">{{ check.field.label}}{{ check.field }}</div>
-                <div class="pull-left short">{{ check.subfield.label }}{{ check.subfield }}</div>
-                <div class="pull-left short">{{ check.indicator.label  }}{{ check.indicator }}</div>
-                <div class="pull-left short">{{ check.operator.label  }}{{ check.operator }}</div>
-                <div class="pull-left short">{{ check.values.label }}{{ check.values }}</div>
+                {{ check.title|attr:"placeholder:Title"|add_class:"input-small" }}
+                {{ check.description|attr:"placeholder:Description"|attr:"rows:3" }}
+            </fieldset>
+            <fieldset class="check">
+                    {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
+                    {{ check.subfield|attr:"placeholder:Subfield"|add_class:"input-small" }}
+                    {{ check.indicator|attr:"placeholder:Indicator"|add_class:"input-small" }}
+                    {{ check.operator|attr:"placeholder:Operator" }}
+                    {{ check.values|attr:"placeholder:Value(s)"|add_class:"input-small" }}
 
             </fieldset>
+            </div>
+            </div>
         {% endfor %}
+        <input type="button" value="Add More" id="add_more">
+        <script>
+            $('#add_more').click(function() {
+                cloneMore('div.check:last', 'checks');
+            });
+        </script>
 
     {% endif %}
     <input type="submit" value="Submit" />
 </form>
+<script type="text/javascript">
+    function cloneMore(selector, type) {
+      var newElement = $(selector).clone(true);
+      var total = $('#id_' + type + '-TOTAL_FORMS').val();
+      newElement.find(':input').each(function() {
+        var name = $(this).attr('name').replace('-' + (total-1) + '-','-' + total + '-');
+        var id = 'id_' + name;
+        $(this).attr({'name': name, 'id': id}).val('').removeAttr('checked');
+      });
+      newElement.find('label').each(function() {
+        var newFor = $(this).attr('for').replace('-' + (total-1) + '-','-' + total + '-');
+        $(this).attr('for', newFor);
+      });
+        newElement.find("span.check-number").text(total);
+      total++;
+      newElement.find("span.check-number").text(total);
+      $('#id_' + type + '-TOTAL_FORMS').val(total);
+      $(selector).after(newElement);
+    }
 
+</script>
 {% endif %}
 {% endblock %}

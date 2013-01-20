@@ -26,3 +26,7 @@ fieldest.check textarea { min-height: 75px; height: 75px; width: 375px;}
 .report-fields input, .report-fields textarea {width: 90%;}
 
 .report-fields textarea { height: 100px;}
+
+div.check {
+    border: 1px solid red;
+}

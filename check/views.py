@@ -145,6 +145,11 @@ def checks(request):
 
         return HttpResponseRedirect('/checks/') # Redirect after POST
 
+def ajax_check(request):
+     form = CheckForm()
+
+
+
 def run_report(request, report_id):
     if request.method == 'GET':
         report = Report(pk=report_id)
