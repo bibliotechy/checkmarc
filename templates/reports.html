@@ -1,47 +1,64 @@
 {% extends 'base.html' %}
 {%  load widget_tweaks %}
+{%  block extra_head %}
+    <script type="text/javascript">
+    $(document).ready(function(){
+        $("div.check:even").on('load', function(){
+            $(this).addClass("even");
+        });
+        $("div.check:odd").on('load', function(){
+            $(this).addClass("odd");
+        });
+
+    })
+    </script>
+{% endblock extra_head %}
 
 {% block content %}
     <h1>Create a new report</h1>
 {% if report_form %}
 
-<form class="form-inline" action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
-    <div class="report-fields">
-        <fieldset>
-           {{ report_form.title|attr:"placeholder:Report Title"}}
-            {{ report_form.description|attr:"placeholder:Report Description"|attr:"rows:3" }}
-        </fieldset>
-    </div>
-    {% if checks %}
-        {{ checks.management_form }}>
-        {% for check in checks  %}
-            <div class="check clearfix" style="width: 100%;">
-            <div class="pull-left"><p>Check <span class="check-number">{{ forloop.counter }}</span></p></div>
-            <div class="pull-left">
-            <fieldset class="check">
-                {{ check.title|attr:"placeholder:Title"|add_class:"input-small" }}
-                {{ check.description|attr:"placeholder:Description"|attr:"rows:3" }}
+    <form class="form-inline" action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
+        <div class="report-fields span12">
+            <fieldset>
+                {{ report_form.title|attr:"placeholder:Report Title"}}
+                {{ report_form.description|attr:"placeholder:Report Description"|attr:"rows:2" }}
             </fieldset>
-            <fieldset class="check">
-                    {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
-                    {{ check.subfield|attr:"placeholder:Subfield"|add_class:"input-small" }}
-                    {{ check.indicator|attr:"placeholder:Indicator"|add_class:"input-small" }}
-                    {{ check.operator|attr:"placeholder:Operator" }}
-                    {{ check.values|attr:"placeholder:Value(s)"|add_class:"input-small" }}
+        </div>
+        {% if checks %}
+            {{ checks.management_form }}
+            {% for check in checks  %}
+                <div class="check clearfix span12" >
 
-            </fieldset>
-            </div>
-            </div>
-        {% endfor %}
-        <input type="button" value="Add More" id="add_more">
-        <script>
-            $('#add_more').click(function() {
-                cloneMore('div.check:last', 'checks');
-            });
-        </script>
+                    <div class="pull-left span1"><p>Check <span class="check-number">{{ forloop.counter }}</span></p></div>
+                    <div class="pull-left span10" >
 
-    {% endif %}
-    <input type="submit" value="Submit" />
+                        <fieldset class="check">
+                            {{ check.field.errors }}
+                            {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
+                            {{ check.subfield.errors }}
+                            {{ check.subfield|attr:"placeholder:Subfield"|add_class:"input-small" }}
+                            {{ check.indicator.errors }}
+                            {{ check.indicator|attr:"placeholder:Indicator" }}
+                            {{ check.operator.errors }}
+                            {{ check.operator|attr:"placeholder:Operator" }}
+                            {{ check.values.errors }}
+                            {{ check.values|attr:"placeholder:Value(s)"|add_class:"input-small" }}
+
+                        </fieldset>
+                    </div>
+                <a class="remove btn btn-danger btn-small">X</a>
+                </div>
+            {% endfor %}
+            <input type="button" value="Add Another Check" id="add_more">
+            <script>
+                $('#add_more').click(function() {
+                    cloneMore('div.check:last', 'checks');
+                });
+            </script>
+
+        {% endif %}
+        <input type="submit" value="Submit" />
 </form>
 <script type="text/javascript">
     function cloneMore(selector, type) {
@@ -56,12 +73,29 @@
         var newFor = $(this).attr('for').replace('-' + (total-1) + '-','-' + total + '-');
         $(this).attr('for', newFor);
       });
-        newElement.find("span.check-number").text(total);
+
       total++;
       newElement.find("span.check-number").text(total);
-      $('#id_' + type + '-TOTAL_FORMS').val(total);
+        $('#id_' + type + '-TOTAL_FORMS').val(total);
       $(selector).after(newElement);
     }
+
+    function removeMore(selector, type){
+        $(selector).remove();
+        total_forms = $('#id_' + type + '-TOTAL_FORMS');
+        total_forms.val(total_forms.val() -1);
+    }
+
+
+    $('a.remove').on('click',function(){
+      if ($("div.check").length > 1){
+        check = $(this).parent();
+        removeMore(check, 'checks');
+      }
+       else { alert("Add an alert about not deleting only check");}
+    });
+
+
 
 </script>
 {% endif %}

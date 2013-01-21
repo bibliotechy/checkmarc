@@ -15,18 +15,7 @@
     float: left;
 }
 
-fieldset{
-    border: 1px solid #999;
-}
-
-.check textarea, .check input {float: left;}
-fieldest.check textarea { min-height: 75px; height: 75px; width: 375px;}
-
-.short input, .short select { width: 45px;}
-.report-fields input, .report-fields textarea {width: 90%;}
-
-.report-fields textarea { height: 100px;}
-
 div.check {
-    border: 1px solid red;
+margin: 5px auto;
 }
+

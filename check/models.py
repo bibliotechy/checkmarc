@@ -22,6 +22,7 @@ post_save.connect(create_user_profile, sender=User)
 class Check(models.Model):
 
     OPS = (
+        (0, 'Select an operator'),
         ('eq' , 'is'),
         ('nq' , 'is not'),
         ('ex' , 'exists'),
@@ -35,8 +36,9 @@ class Check(models.Model):
     description = models.TextField(blank=True, verbose_name="Check Description")
     field       = models.CharField(max_length=10, help_text="A MARC field, (or header")
     subfield    = models.CharField(max_length=10,blank=True)
-    indicator   = models.CharField(max_length=10,blank=True,choices=(('0','indicator1'),('1','indicator2'),),)
-    operator    = models.CharField(max_length=2, choices=OPS)
+    indicator   = models.CharField(max_length=10,blank=True,
+        choices=(('1','indicator1'),('2','indicator2')))
+    operator    = models.CharField(max_length=2, choices=OPS, default=0)
     values      = models.CharField(max_length=100, blank=True)
 
     def __unicode__(self):
@@ -44,6 +46,8 @@ class Check(models.Model):
           result = self.field
           if self.subfield:
             result += " " + self.subfield
+          if self.indicator:
+              result += " " + self.get_indicator_display()
           result += " " +self.get_operator_display()
           if self.values:
             result += " " +self.values

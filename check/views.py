@@ -45,9 +45,10 @@ def add_report(request):
             creator     = user
 
         else:
-            error_form = ReportForm(request.POST)
+            report_form = ReportForm(request.POST, prefix="report")
+            checks_forms = check_formset(request.POST, prefix="checks")
             return render_to_response('reports.html',
-                {'form' : error_form}, context_instance=RequestContext(request))
+                {'report_form' : report_form, 'checks': checks_forms}, context_instance=RequestContext(request))
 
         report = Report(title=title, description = description, creator = creator)
         report.save()
@@ -250,8 +251,8 @@ def _response_builder(check):
     if check.subfield:
         response += check.subfield + " "
     if check.indicator:
-        response += check.indicator
-    response += [thecheck[1] for thecheck in Check.OPS if check.operator in thecheck][0] + " "
+        response += check.get_indicator_display()+ " "
+    response += check.get_operator_display() + " "
     if check.values:
         response += check.values + ""
     return response
@@ -294,18 +295,17 @@ def _indicator(check):
 def _equals(record, check ):
     if _neither(check):
         if record[check.field].value() == check.values:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if record[check.field][check.subfield] == check.values:
-            response = _response_builder(check
-            )
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if record[check.field].indicators[check.indicator] == check.values:
-            response = _response_builder(check)
+        if record[check.field].indicators[int(check.indicator)] == check.values:
+            response = check.__unicode__()
         else:
             response = ''
 
@@ -314,17 +314,17 @@ def _equals(record, check ):
 def _doesNotEqual(record, check):
     if _neither(check):
         if record[check.field].value() != check.values:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if record[check.field][check.subfield] != check.values:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if record[check.field].indicators[check.indicator] == check.values:
-            response = _response_builder(check)
+        if record[check.field].indicators[int(check.indicator)] == check.values:
+            response = check.__unicode__()
         else:
             response = ''
 
@@ -333,17 +333,17 @@ def _doesNotEqual(record, check):
 def _exists(record, check):
     if _neither(check):
         if record[check.field]:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if record[check.field][check.subfield]:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if record[check.field].indicators[check.indicator] == check.values:
-            response = _response_builder(check)
+        if record[check.field].indicators[int(check.indicator)] == check.values:
+            response = check.__unicode__()
         else:
             response = ''
 
@@ -352,17 +352,17 @@ def _exists(record, check):
 def _doesNotExist(record, check):
     if _neither(check):
         if not record[check.field]:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if not record[check.field][check.subfield]:
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if not record[check.field].indicators[check.indicator]:
-            response = _response_builder(check)
+        if not record[check.field].indicators[int(check.indicator)]:
+            response = check.__unicode__()
         else:
             response = ""
 
@@ -371,17 +371,17 @@ def _doesNotExist(record, check):
 def _contains(record, check):
     if _neither(check):
         if record[check.field].value() in check.values.split(","):
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if record[check.field][check.subfield] in check.values.split(","):
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if record[check.field].indicators[check.indicator] in check.values.split(","):
-            response = _response_builder(check)
+        if record[check.field].indicators[int(check.indicator)] in check.values.split(","):
+            response = check.__unicode__()
         else:
             response = ""
 
@@ -390,17 +390,17 @@ def _contains(record, check):
 def _doesNotContain(record, check):
     if _neither(check):
         if record[check.field].value() not in check.values.split(","):
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if record[check.field][check.subfield] not in check.values.split(","):
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if record[check.field].indicators[check.indicator] not in check.values.split(","):
-            response = _response_builder(check)
+        if record[check.field].indicators[int(check.indicator)] not in check.values.split(","):
+            response = check.__unicode__()
         else:
             response = ""
 
@@ -409,17 +409,17 @@ def _doesNotContain(record, check):
 def _isEmpty(record, check):
     if _neither(check):
         if record[check.field].value() == "":
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _subfield(check):
         if record[check.field][check.subfield] == "":
-            response = _response_builder(check)
+            response = check.__unicode__()
         else:
             response = ''
     elif _indicator(check):
-        if record[check.field].indicators[check.indicator] == "":
-            response = _response_builder(check)
+        if record[check.field].indicators[int(check.indicator)] == "":
+            response = check.__unicode__()
         else:
             response = ""
     return response
