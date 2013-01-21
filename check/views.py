@@ -167,13 +167,13 @@ def run_report(request, report_id):
             report = data.cleaned_data['report']
             f = request.FILES['file']
             file = f.read()
-            reader = pymarc.MARCReader(file)
+            reader = pymarc.MARCReader(file, to_unicode=True)
 
             for r in reader:
                 name = r.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    result = _logic_builder(r, check)
+                    result = _response_builder(r, check)
                     if result:
                         results[name][check.field] = result
             return render_to_response('result.html',
@@ -246,40 +246,38 @@ def _edit_check(checks_data, i, report):
     report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
     return True
 
-def _response_builder(check):
-    response = check.field + " "
-    if check.subfield:
-        response += check.subfield + " "
-    if check.indicator:
-        response += check.get_indicator_display()+ " "
-    response += check.get_operator_display() + " "
-    if check.values:
-        response += check.values + ""
-    return response
 
-def _logic_builder(record, check):
+def _response_builder(record, check):
+
+    response = ""
 
     if check.operator == 'eq':
-        response = _equals(record,check)
+        if __equals(record,check):
+            response = check
 
     elif check.operator == 'nq':
-        response = _doesNotEqual(record,check)
+        if _doesNotEqual(record,check):
+            response = check
 
     elif check.operator == 'ex':
-        response = _exists(record, check)
+        if _exists(record, check):
+            response = check
 
     elif check.operator == 'nx':
-        response = _doesNotExist(record, check)
-
+        if _doesNotExist(record, check):
+            response = check
 
     elif check.operator == 'cn':
-        response = _contains(record, check)
+        if _contains(record, check):
+            response = check
 
     elif check.operator == 'dc':
-        response = _doesNotContain(record, check)
+        if _doesNotContain(record, check):
+            response = check
 
     elif check.operator == 'em':
-        response = _isEmpty(record, check)
+        if _isEmpty(record, check):
+            response = check
 
     return response
 
@@ -292,134 +290,59 @@ def _subfield(check):
 def _indicator(check):
     return bool(check.indicator and not check.subfield)
 
-def _equals(record, check ):
-    if _neither(check):
-        if record[check.field].value() == check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
-    elif _subfield(check):
-        if record[check.field][check.subfield] == check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
-    elif _indicator(check):
-        if record[check.field].indicators[int(check.indicator)] == check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
 
-    return response
+def __equals(record, check):
+    if _neither(check):
+        return record[check.field].value() == check.values
+    if _subfield(check):
+        return record[check.field][check.subfield] == check.values
+    if _indicator(check):
+        return record[check.field].indicators[int(check.indicator)] == check.values
 
 def _doesNotEqual(record, check):
     if _neither(check):
-        if record[check.field].value() != check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field].value() != check.values
     elif _subfield(check):
-        if record[check.field][check.subfield] != check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field][check.subfield] != check.values
     elif _indicator(check):
-        if record[check.field].indicators[int(check.indicator)] == check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
-
-    return response
+        return record[check.field].indicators[int(check.indicator)] == check.values
 
 def _exists(record, check):
     if _neither(check):
-        if record[check.field]:
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field]
     elif _subfield(check):
-        if record[check.field][check.subfield]:
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field][check.subfield]
     elif _indicator(check):
-        if record[check.field].indicators[int(check.indicator)] == check.values:
-            response = check.__unicode__()
-        else:
-            response = ''
-
-    return response
+        return record[check.field].indicators[int(check.indicator)] == check.values
 
 def _doesNotExist(record, check):
     if _neither(check):
-        if not record[check.field]:
-            response = check.__unicode__()
-        else:
-            response = ''
+        return not record[check.field]
     elif _subfield(check):
-        if not record[check.field][check.subfield]:
-            response = check.__unicode__()
-        else:
-            response = ''
+        return not record[check.field][check.subfield]
     elif _indicator(check):
-        if not record[check.field].indicators[int(check.indicator)]:
-            response = check.__unicode__()
-        else:
-            response = ""
-
-    return response
+        return not record[check.field].indicators[int(check.indicator)]
 
 def _contains(record, check):
     if _neither(check):
-        if record[check.field].value() in check.values.split(","):
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field].value() in check.values.split(",")
     elif _subfield(check):
-        if record[check.field][check.subfield] in check.values.split(","):
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field][check.subfield] in check.values.split(",")
     elif _indicator(check):
-        if record[check.field].indicators[int(check.indicator)] in check.values.split(","):
-            response = check.__unicode__()
-        else:
-            response = ""
-
-    return response
+        return record[check.field].indicators[int(check.indicator)] in check.values.split(",")
 
 def _doesNotContain(record, check):
     if _neither(check):
-        if record[check.field].value() not in check.values.split(","):
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field].value() not in check.values.split(",")
     elif _subfield(check):
-        if record[check.field][check.subfield] not in check.values.split(","):
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field][check.subfield] not in check.values.split(",")
     elif _indicator(check):
-        if record[check.field].indicators[int(check.indicator)] not in check.values.split(","):
-            response = check.__unicode__()
-        else:
-            response = ""
-
-    return response
+        return record[check.field].indicators[int(check.indicator)] not in check.values.split(",")
 
 def _isEmpty(record, check):
     if _neither(check):
-        if record[check.field].value() == "":
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field].value() == ""
     elif _subfield(check):
-        if record[check.field][check.subfield] == "":
-            response = check.__unicode__()
-        else:
-            response = ''
+        return record[check.field][check.subfield] == ""
     elif _indicator(check):
-        if record[check.field].indicators[int(check.indicator)] == "":
-            response = check.__unicode__()
-        else:
-            response = ""
-    return response
+        return record[check.field].indicators[int(check.indicator)] == ""
