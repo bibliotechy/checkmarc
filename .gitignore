@@ -11,7 +11,7 @@ lib64
 build/
 *.pyo
 *.pyc
-settings.py
+checkmarc/settings.py
 *.sql
 *.log
 *.pot
