@@ -1,36 +1,19 @@
-<h2><a href="/report/{{ report.pk }}/">{{ report.title }}</a></h2>
-<p class="description">{{ report.description }}</p>
-<div class="accordion" id="accordion1">
-    <div class="accordion-group">
-        <div class="accordion-heading">
-            <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion1" href="#collapseOne">
-                Checks
-            </a>
-        </div>
-        <div id="collapseOne" class="accordion-body collapse in">
-            <div class="accordion-inner">
-                {%  for check in report.checks.all %}
+<div class="report-list span10">
+    <h4>
+        <a href="/report/{{ report.pk }}/" class="it">{{ report.title }}</a>  - <small>{{ report.description }}</small>
+    </h4>
 
-                    <div>{{ check }}</div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+        <h5 class="span10">Checks</h5>
+          <ul class="span9">
+            {%  for check in report.checks.all %}
+              <li>{{ check }}</li>
+            {% endfor %}
+          </ul>
+
+<div class="btn-group span">
+    <button class="btn" ><a href="/report/{{ report.pk }}/run/">Run report</a></button>
+    <button class="btn" ><a href="/report/{{ report.pk }}/edit/">Edit report</a></button>
+    <button class="btn disabled" ><a href="/report/{{ report.pk }}/fork/">Fork report</a></button>
 </div>
 
-
-
-
-
-
-<div class="report actions btn-group">
-    <div>
-        <a class="btn" href="/report/{{ report.pk }}/run/">Run report</a>
-    </div>
-    <div>
-        <a class="btn" href="/report/{{ report.pk }}/edit/">Edit report</a>
-    </div>
-    <div>
-        <a class="btn" href="/report/{{ report.pk }}/fork/">Fork report</a>
-    </div>
 </div>

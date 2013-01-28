@@ -13,7 +13,7 @@ def home(request):
 
 
 def list_reports(request):
-    reports = Report.objects.order_by('title')[:10]
+    reports = Report.objects.order_by('title')
     return render_to_response('list_reports.html',
         {'reports' : reports},  context_instance=RequestContext(request))
 
@@ -54,27 +54,27 @@ def add_report(request):
         report.save()
 
         for i in range(0,checks_data.total_form_count()):
-
             new_check = _build_new_check(checks_data, i)
-
             new_check.save()
-
             report.checks.add(new_check)
             report.save()
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
+@login_required
 def edit_report(request, report_id=''):
     user = request.user
     check_formset = formset_factory(CheckForm, can_delete=True, can_order=True)
     if request.method == 'GET':
         report = get_object_or_404(Report, pk=report_id)
-        form = ReportForm(instance=report, prefix="report")
-        prefix = 'check'
-        new_form = _bind_check_formset_with_report_checks(report, prefix)
-        formset  = check_formset(new_form,prefix=prefix )
-        return render_to_response('reports.html',
-            {'report_form':form,'checks' : formset}, context_instance=RequestContext(request))
+        if user != report.creator:
+            return HttpResponseRedirect('/') #Add error message about report ownership
+        else:
+            form = ReportForm(instance=report, prefix="report")
+            existing_checks = _bind_check_formset_with_report_checks(report, 'checks')
+            formset  = check_formset(existing_checks,prefix='checks' )
+            return render_to_response('reports.html',
+                {'report_form':form,'checks' : formset}, context_instance=RequestContext(request))
 
     if request.method == 'POST':
         report = Report(pk=report_id)
@@ -88,7 +88,7 @@ def edit_report(request, report_id=''):
 
             for i in range(0,checks_data.total_form_count()):
                 try:
-                    _edit_check(checks_data,i)
+                    _edit_check(checks_data,i, report)
                     report.checks.all()[i].save()
 
                 except IndexError:
@@ -146,11 +146,6 @@ def checks(request):
 
         return HttpResponseRedirect('/checks/') # Redirect after POST
 
-def ajax_check(request):
-     form = CheckForm()
-
-
-
 def run_report(request, report_id):
     if request.method == 'GET':
         report = Report(pk=report_id)
@@ -169,13 +164,13 @@ def run_report(request, report_id):
             file = f.read()
             reader = pymarc.MARCReader(file, to_unicode=True)
 
-            for r in reader:
-                name = r.title()
+            for record in reader:
+                name = record.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    result = _response_builder(r, check)
+                    result = _response_builder(record, check)
                     if result:
-                        results[name][check.field] = result
+                        results[name][check.__unicode__()] = result
             return render_to_response('result.html',
                 {'results': results },  context_instance=RequestContext(request))
 
@@ -183,7 +178,6 @@ def run_report(request, report_id):
             error_form = RunReportForm(report_id, request.POST, request.FILES)
             return render_to_response('run_report.html',
                 {'run_report' : error_form}, context_instance=RequestContext(request))
-
 
 def login(request):
     if request.user.is_authenticated():
@@ -194,6 +188,12 @@ def login(request):
 def logout(request):
     auth.logout(request)
     return redirect('/')
+
+def about(request):
+    return
+
+def walkthrough(request):
+    return
 
 def _bind_check_formset_with_report_checks(report, prefix='form' ):
 
@@ -245,6 +245,9 @@ def _edit_check(checks_data, i, report):
     report.checks.all()[i].operator    = checks_data[i].cleaned_data['operator']
     report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
     return True
+
+
+
 
 
 def _response_builder(record, check):

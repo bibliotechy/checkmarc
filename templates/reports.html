@@ -14,15 +14,16 @@
     </script>
 {% endblock extra_head %}
 
+{% block page-header %} Create a new report {% endblock %}
 {% block content %}
-    <h1>Create a new report</h1>
 {% if report_form %}
 
     <form class="form-inline" action="{% if form.instance.pk %}report/edit/{{ form.instance.pk }}/{% endif %}" method="post">{% csrf_token %}
         <div class="report-fields span12">
-            <fieldset>
-                {{ report_form.title|attr:"placeholder:Report Title"}}
-                {{ report_form.description|attr:"placeholder:Report Description"|attr:"rows:2" }}
+            <fieldset class="report">
+                <legend>Report info</legend>
+                {{ report_form.title|attr:"placeholder:Report Title"|add_class:"span4"}}
+                {{ report_form.description|attr:"placeholder:Report Description"|attr:"rows:1"|add_class:"span8" }}
             </fieldset>
         </div>
         {% if checks %}
@@ -30,10 +31,11 @@
             {% for check in checks  %}
                 <div class="check clearfix span12" >
 
-                    <div class="pull-left span1"><p>Check <span class="check-number">{{ forloop.counter }}</span></p></div>
-                    <div class="pull-left span10" >
+
+                    <div class="span10 pull-left">
 
                         <fieldset class="check">
+                            <legend>Checks</legend>
                             {{ check.field.errors }}
                             {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
                             {{ check.subfield.errors }}
@@ -47,7 +49,9 @@
 
                         </fieldset>
                     </div>
+                    <div class=" span1 pull-left">
                 <a class="remove btn btn-danger btn-small">X</a>
+                    </div>
                 </div>
             {% endfor %}
             <input type="button" value="Add Another Check" id="add_more">

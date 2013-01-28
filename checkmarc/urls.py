@@ -9,6 +9,8 @@ admin.autodiscover()
 urlpatterns = patterns('check.views',
     # Examples:
     url(r'^$', 'home'),
+    url(r'$wtf/$','walkthrough'),
+    url(r'$about/$','about'),
 
 
 

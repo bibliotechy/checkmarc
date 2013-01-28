@@ -19,3 +19,11 @@ div.check {
 margin: 5px auto;
 }
 
+div.report-list {
+    border-bottom: 1px dashed #666;
+    margin-bottom: 5px;
+}
+
+fieldset.report {
+    background-color: #eee;
+}

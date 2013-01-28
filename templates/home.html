@@ -8,13 +8,13 @@ checkmarc - Quickly runchecks on marc fies
 
 
 {% block content %}
-    {% if request.user.is_authenticated %}
+    <div class="hero-unit">
+        <h1><i>245 $a</i> : checkmarc</h1>
+        <p><i>520 $a</i>: A simple way to create, run, and share reports on batches of MARC files. </p>
+        <a class="btn btn-primary btn-large" href="/wtf/">
+            Get started
+        </a>
+    </div>
 
-        Hi {{ request.user.username }}
 
-    {% endif%}
-
-    <h2>245 $a : checkmarc</h2>
- <p>A simple way to create, reuse, and share reports on marc files. </p>
-  {{ request.user }}
 {% endblock %}
