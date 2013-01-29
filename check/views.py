@@ -1,10 +1,12 @@
 from check.models import *
+from check.functions import *
 from django.shortcuts import render, render_to_response, HttpResponseRedirect, redirect, get_object_or_404
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
 from django.forms.models import model_to_dict
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
+import operator
 import pymarc
 
 
@@ -128,6 +130,7 @@ def checks(request):
         if data.is_valid():
             title       = data.cleaned_data['title']
             description = data.cleaned_data['desc']
+            leader       = data.cleaned_data['leader']
             field       = data.cleaned_data['field']
             subfield    = data.cleaned_data['subfield']
             indicator   = data.cleaned_data['indicator']
@@ -137,6 +140,7 @@ def checks(request):
             new_check = Check(
                 title     = title,
                 desc      = description,
+                leader    = leader,
                 field     = field,
                 subfield  = subfield,
                 indicator = indicator,
@@ -222,6 +226,7 @@ def _build_new_check(checks_data, i):
     check_title = checks_data[i].cleaned_data['title']
     description = checks_data[i].cleaned_data['description']
     field       = checks_data[i].cleaned_data['field']
+    leader      = checks_data[i].cleaned_data['leader']
     subfield    = checks_data[i].cleaned_data['subfield']
     indicator   = checks_data[i].cleaned_data['indicator']
     operator    = checks_data[i].cleaned_data['operator']
@@ -229,6 +234,7 @@ def _build_new_check(checks_data, i):
 
     new_check = Check(title=check_title,
         description=description,
+        leader=leader,
         field=field,
         subfield=subfield,
         indicator=indicator,
@@ -239,6 +245,7 @@ def _build_new_check(checks_data, i):
 def _edit_check(checks_data, i, report):
     report.checks.all()[i].check_title = checks_data[i].cleaned_data['title']
     report.checks.all()[i].description = checks_data[i].cleaned_data['description']
+    report.checks.all()[i].leader      = checks_data[i].cleaned_data['leader']
     report.checks.all()[i].field       = checks_data[i].cleaned_data['field']
     report.checks.all()[i].subfield    = checks_data[i].cleaned_data['subfield']
     report.checks.all()[i].indicator   = checks_data[i].cleaned_data['indicator']
@@ -246,106 +253,3 @@ def _edit_check(checks_data, i, report):
     report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
     return True
 
-
-
-
-
-def _response_builder(record, check):
-
-    response = ""
-
-    if check.operator == 'eq':
-        if __equals(record,check):
-            response = check
-
-    elif check.operator == 'nq':
-        if _doesNotEqual(record,check):
-            response = check
-
-    elif check.operator == 'ex':
-        if _exists(record, check):
-            response = check
-
-    elif check.operator == 'nx':
-        if _doesNotExist(record, check):
-            response = check
-
-    elif check.operator == 'cn':
-        if _contains(record, check):
-            response = check
-
-    elif check.operator == 'dc':
-        if _doesNotContain(record, check):
-            response = check
-
-    elif check.operator == 'em':
-        if _isEmpty(record, check):
-            response = check
-
-    return response
-
-def _neither(check):
-    return bool(not check.subfield and not check.indicator)
-
-def _subfield(check):
-    return bool(check.subfield and not check.indicator)
-
-def _indicator(check):
-    return bool(check.indicator and not check.subfield)
-
-
-def __equals(record, check):
-    if _neither(check):
-        return record[check.field].value() == check.values
-    if _subfield(check):
-        return record[check.field][check.subfield] == check.values
-    if _indicator(check):
-        return record[check.field].indicators[int(check.indicator)] == check.values
-
-def _doesNotEqual(record, check):
-    if _neither(check):
-        return record[check.field].value() != check.values
-    elif _subfield(check):
-        return record[check.field][check.subfield] != check.values
-    elif _indicator(check):
-        return record[check.field].indicators[int(check.indicator)] == check.values
-
-def _exists(record, check):
-    if _neither(check):
-        return record[check.field]
-    elif _subfield(check):
-        return record[check.field][check.subfield]
-    elif _indicator(check):
-        return record[check.field].indicators[int(check.indicator)] == check.values
-
-def _doesNotExist(record, check):
-    if _neither(check):
-        return not record[check.field]
-    elif _subfield(check):
-        return not record[check.field][check.subfield]
-    elif _indicator(check):
-        return not record[check.field].indicators[int(check.indicator)]
-
-def _contains(record, check):
-    if _neither(check):
-        return record[check.field].value() in check.values.split(",")
-    elif _subfield(check):
-        return record[check.field][check.subfield] in check.values.split(",")
-    elif _indicator(check):
-        return record[check.field].indicators[int(check.indicator)] in check.values.split(",")
-
-def _doesNotContain(record, check):
-    if _neither(check):
-        return record[check.field].value() not in check.values.split(",")
-    elif _subfield(check):
-        return record[check.field][check.subfield] not in check.values.split(",")
-    elif _indicator(check):
-        return record[check.field].indicators[int(check.indicator)] not in check.values.split(",")
-
-def _isEmpty(record, check):
-    if _neither(check):
-        return record[check.field].value() == ""
-    elif _subfield(check):
-        return record[check.field][check.subfield] == ""
-    elif _indicator(check):
-        return record[check.field].indicators[int(check.indicator)] == ""

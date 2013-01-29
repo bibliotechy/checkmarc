@@ -37,6 +37,7 @@
                         <fieldset class="check">
                             <legend>Checks</legend>
                             {{ check.field.errors }}
+                            {{ check.leader|attr:"placeholder:Leader position"|add_class:"input-small" }}
                             {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
                             {{ check.subfield.errors }}
                             {{ check.subfield|attr:"placeholder:Subfield"|add_class:"input-small" }}
