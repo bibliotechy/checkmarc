@@ -37,7 +37,7 @@ class Check(models.Model):
     title       = models.CharField(max_length=100, verbose_name="Check Title", blank=True )
     description = models.TextField(blank=True, verbose_name="Check Description")
     leader      = models.IntegerField(blank=True, null=True, verbose_name="MARC Record leader")
-    field       = models.CharField(max_length=10, help_text="A MARC field")
+    field       = models.CharField(max_length=10, blank=True, help_text="A MARC field")
     subfield    = models.CharField(max_length=10,blank=True)
     indicator   = models.CharField(max_length=10,blank=True,
         choices=(('1','indicator1'),('2','indicator2')))

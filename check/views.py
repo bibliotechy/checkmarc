@@ -1,5 +1,5 @@
 from check.models import *
-from check.functions import *
+from check.operators import _response_builder
 from django.shortcuts import render, render_to_response, HttpResponseRedirect, redirect, get_object_or_404
 from django.template import RequestContext
 from django.forms.formsets import formset_factory

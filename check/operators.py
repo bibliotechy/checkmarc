@@ -1,7 +1,5 @@
 import operator
 
-
-
 def _operation_function(check):
     operator_functions ={
         u'eq' : operator.eq,
