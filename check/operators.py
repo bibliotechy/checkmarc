@@ -1,5 +1,23 @@
 import operator
 
+def _response_builder(record, check):
+
+    if _run_operation(record, check):
+        return check
+    else:
+        return ""
+
+def _run_operation(record, check):
+    operation = _operation_function(check)
+    if _leader(check):
+        return _operation_wrapper(operation, record.leader[check.leader], check.values)
+    if _field(check):
+        return _operation_wrapper(operation, record[check.field], check.values)
+    if _subfield(check):
+        return _operation_wrapper(operation, record[check.field][check.subfield], check.values)
+    if _indicator(check):
+        return _operation_wrapper(operation, record[check.field].indicators[int(check.indicator)], check.values )
+
 def _operation_function(check):
     operator_functions ={
         u'eq' : operator.eq,
@@ -14,6 +32,20 @@ def _operation_function(check):
     }
     return operator_functions[check.operator]
 
+def _leader(check):
+    return bool(check.leader)
+
+def _field(check):
+    return bool(not check.subfield and not check.indicator)
+
+def _subfield(check):
+    return bool(check.subfield and not check.indicator)
+
+def _indicator(check):
+    return bool(check.indicator and not check.subfield)
+
+def _operation_wrapper(operation, record_value, check_value):
+    return operation(record_value, check_value)
 
 def _is_in(value, array):
     return bool(value in array)
@@ -29,42 +61,3 @@ def _starts_with(needle, haystack):
 
 def _ends_with(needle, haystack):
     return bool(haystack.endswith(needle))
-
-
-def _response_builder(record, check):
-
-    response = _run_operation(record, check)
-    return response
-
-def _run_operation(record, check):
-    operation = _operation_function(check)
-    if _leader(check):
-        if _operation_wrapper(operation, record.leader[check.leader], check.values):
-            return check
-    if _field(check):
-        if _operation_wrapper(operation, record[check.field], check.values):
-            return check
-    if _subfield(check):
-        if _operation_wrapper(operation, record[check.field][check.subfield], check.values):
-            return check
-    if _indicator(check):
-        if _operation_wrapper(operation, record[check.field].indicators[int(check.indicator)], check.values ):
-            return check
-
-def _operation_wrapper(operation, record_value, check_value):
-    return operation(record_value, check_value)
-
-
-def _leader(check):
-    return bool(check.leader)
-
-def _field(check):
-    return bool(not check.subfield and not check.indicator)
-
-def _subfield(check):
-    return bool(check.subfield and not check.indicator)
-
-def _indicator(check):
-    return bool(check.indicator and not check.subfield)
-
-
