@@ -1,6 +1,6 @@
 import operator
 
-def _response_builder(record, check):
+def run_check(record, check):
 
     if _run_operation(record, check):
         return check
@@ -19,6 +19,8 @@ def _run_operation(record, check):
         return _operation_wrapper(operation, record[check.field].indicators[int(check.indicator)], check.values )
 
 def _operation_function(check):
+    """ Choose the function to be called base on check's operator """
+
     operator_functions ={
         u'eq' : operator.eq,
         u'nq' : operator.ne,

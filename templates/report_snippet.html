@@ -10,10 +10,13 @@
             {% endfor %}
           </ul>
 
-<div class="btn-group span">
+<div class="btn-group">
     <button class="btn" ><a href="/report/{{ report.pk }}/run/">Run report</a></button>
     <button class="btn" ><a href="/report/{{ report.pk }}/edit/">Edit report</a></button>
-    <button class="btn disabled" ><a href="/report/{{ report.pk }}/fork/">Fork report</a></button>
+    <form action="/report/{{ report.pk }}/fork/" method="POST" id="fork">
+        {% csrf_token %}
+        <button class="btn"  type="submit"><a>Fork report</a></button>
+    </form>
 </div>
 
 </div>

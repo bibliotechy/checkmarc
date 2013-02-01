@@ -1,5 +1,5 @@
 from check.models import *
-from check.operators import _response_builder
+from check.operators import run_check
 from django.shortcuts import render, render_to_response, HttpResponseRedirect, redirect, get_object_or_404
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
@@ -106,9 +106,33 @@ def edit_report(request, report_id=''):
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
+@login_required
 def fork_report(request, report_id):
+    """
+    Forks a report and then routes user to edit page for the new report.
+    """
+    if request.method == "POST":
+        new_report = _fork_report(request,report_id)
+        return HttpResponseRedirect("/report/" + str(new_report.pk) + "/edit/")
+    else:
+        #add a nice message about only accepting post here.
+        return redirect("/")
 
-    return
+def _fork_report(request, report_id):
+    """
+    Create copy of an object, but issue new pk, creator and possibly title
+    """
+    report_to_copy = Report(pk=report_id)
+    checks_to_copy = report_to_copy.checks.all()
+    #setting pk to None, then saving te object creates a new object. django++
+    report_to_copy.pk = None
+    report_to_copy.creator = request.user
+    report_to_copy.save()
+    report_to_copy.checks = checks_to_copy
+    report_to_copy.save()
+    return report_to_copy
+
+
 
 @login_required
 def myreports(request):
@@ -172,7 +196,7 @@ def run_report(request, report_id):
                 name = record.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    result = _response_builder(record, check)
+                    result = run_check(record, check)
                     if result:
                         results[name][check.__unicode__()] = result
             return render_to_response('result.html',

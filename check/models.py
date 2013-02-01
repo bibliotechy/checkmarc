@@ -48,7 +48,7 @@ class Check(models.Model):
         result = ""
         if not self.title:
           if self.leader:
-            result += "leader position " + self.leader
+            result += "leader position " + str(self.leader)
           if self.field:
             result += self.field
           if self.subfield:
