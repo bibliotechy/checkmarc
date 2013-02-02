@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django import forms
 from django.db.models.signals import post_save
+from operator import *
+from check.extraOperators import *
 
 class UserProfile(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -40,7 +42,7 @@ class Check(models.Model):
     field       = models.CharField(max_length=10, blank=True, help_text="A MARC field")
     subfield    = models.CharField(max_length=10,blank=True)
     indicator   = models.CharField(max_length=10,blank=True,
-        choices=(('1','indicator1'),('2','indicator2')))
+                    choices=(('1','indicator1'),('2','indicator2')))
     operator    = models.CharField(max_length=2, choices=OPS, default=0)
     values      = models.CharField(max_length=100, blank=True)
 
@@ -60,9 +62,42 @@ class Check(models.Model):
             result += " " +self.values
         else:
             result = self.title
-
         return result
 
+    def run_check(self, record):
+        if self._run_operation(record):
+            return self
+        else:
+            return ""
+
+    def _run_operation(self, record):
+        operation = self._select_operation_function()
+        if self._leader():
+            return operation_wrapper(operation, record.leader[self.leader], self.values)
+        if self._field():
+            return operation_wrapper(operation, record[self.field], self.values)
+        if self._subfield():
+            return operation_wrapper(operation, record[self.field][self.subfield], self.values)
+        if self._indicator():
+            return operation_wrapper(operation, record[self.field].indicators[int(self.indicator)], self.values )
+
+    def _select_operation_function(self):
+        """ Choose the function to be called base on check's operator """
+        operator_functions = dict(eq=eq, nq=ne, ex=truth, nx=not_, cn=is_in, dc=is_not_in, em=is_empty,
+            sw=starts_with, ew=ends_with)
+        return operator_functions[self.operator]
+
+    def _leader(self):
+        return bool(self.leader)
+
+    def _field(self):
+        return bool(not self.subfield and not self.indicator)
+
+    def _subfield(self):
+        return bool(self.subfield and not self.indicator)
+
+    def _indicator(self):
+        return bool(self.indicator and not self.subfield)
 
 
 class Report(models.Model):

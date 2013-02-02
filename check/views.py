@@ -1,5 +1,4 @@
 from check.models import *
-from check.operators import run_check
 from django.shortcuts import render, render_to_response, HttpResponseRedirect, redirect, get_object_or_404
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
@@ -196,7 +195,7 @@ def run_report(request, report_id):
                 name = record.title()
                 results[name] = {}
                 for check in report.checks.all():
-                    result = run_check(record, check)
+                    result = check.run_check(record)
                     if result:
                         results[name][check.__unicode__()] = result
             return render_to_response('result.html',
