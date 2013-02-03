@@ -28,16 +28,19 @@
         </div>
         {% if checks %}
             {{ checks.management_form }}
+            <legend>
             {% for check in checks  %}
+
                 <div class="check clearfix span12" >
 
 
-                    <div class="span10 pull-left">
+                    <div class="span11 pull-left">
 
                         <fieldset class="check">
 
-                            {{ check.field.errors }}
+                            {{ check.leader.errors }}
                             {{ check.leader|attr:"placeholder:Leader position"|add_class:"input-small" }}
+                            {{ check.field.errors }}
                             {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
                             {{ check.subfield.errors }}
                             {{ check.subfield|attr:"placeholder:Subfield"|add_class:"input-small" }}
@@ -54,7 +57,9 @@
                 <a class="remove btn btn-danger btn-small">X</a>
                     </div>
                 </div>
+
             {% endfor %}
+        </legend>
             <input type="button" value="Add Another Check" id="add_more">
             <script>
                 $('#add_more').click(function() {

@@ -2,8 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django import forms
 from django.db.models.signals import post_save
-from operator import *
-from check.extraOperators import *
+import operator
+from check import extraOperators
 
 class UserProfile(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -22,6 +22,8 @@ def create_user_profile(sender, created, instance, **kwargs):
 post_save.connect(create_user_profile, sender=User)
 
 class Check(models.Model):
+    """ Defines an individual check to perform on a record.
+     Must contain either a field or leader value and an operator."""
 
     OPS = (
         (0, 'Select an operator'),
@@ -71,36 +73,58 @@ class Check(models.Model):
             return ""
 
     def _run_operation(self, record):
+        """ Perform the checks instances operation on the check's fields and values """
         operation = self._select_operation_function()
         if self._leader():
-            return operation_wrapper(operation, record.leader[self.leader], self.values)
+            return extraOperators.operation_wrapper(operation, record.leader[self.leader], self.values)
         if self._field():
-            return operation_wrapper(operation, record[self.field], self.values)
+            return extraOperators.operation_wrapper(operation, record[self.field], self.values)
         if self._subfield():
-            return operation_wrapper(operation, record[self.field][self.subfield], self.values)
+            return extraOperators.operation_wrapper(operation, record[self.field][self.subfield], self.values)
         if self._indicator():
-            return operation_wrapper(operation, record[self.field].indicators[int(self.indicator)], self.values )
+            return extraOperators.operation_wrapper(operation,
+                                                    record[self.field].indicators[int(self.indicator)],
+                                                    self.values )
 
     def _select_operation_function(self):
-        """ Choose the function to be called base on check's operator """
-        operator_functions = dict(eq=eq, nq=ne, ex=truth, nx=not_, cn=is_in, dc=is_not_in, em=is_empty,
-            sw=starts_with, ew=ends_with)
+        """ Choose the function to be called based on check's operator """
+        operator_functions = {'eq': operator.eq,
+                              'nq': operator.ne,
+                              'ex': operator.truth,
+                              'nx': operator.not_,
+                              'cn': extraOperators.is_in,
+                              'dc': extraOperators.is_not_in,
+                              'em': extraOperators.is_empty,
+                              'sw': extraOperators.starts_with,
+                              'ew': extraOperators.ends_with
+                            }
         return operator_functions[self.operator]
 
     def _leader(self):
+        """The MARC record leader should be inspected. Mutually exclusive with field """
         return bool(self.leader)
 
     def _field(self):
+        """The MARC record field should be inspected. Mutually exclusive with leader
+           This indicates that the data of interest is the field as a whole, not any
+           of its constituent parts like subfields or indicators
+        """
         return bool(not self.subfield and not self.indicator)
 
     def _subfield(self):
+        """The subfield of the indicated field should be inspected.
+           Mutually exclusive with indicator"""
         return bool(self.subfield and not self.indicator)
 
     def _indicator(self):
+        """ An indicator of the specified field should be inspected.
+            Mutually exclusive with subfield.
+        """
         return bool(self.indicator and not self.subfield)
 
 
 class Report(models.Model):
+    """ A collection of checks that should be performed on a record.  """
     title       = models.CharField(max_length=100, verbose_name="Report Title")
     description = models.TextField(blank=True, verbose_name="Report Description")
     creator     = models.ForeignKey(User, null=True,blank=True,verbose_name="Report Creator")

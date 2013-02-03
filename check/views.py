@@ -12,17 +12,12 @@ import pymarc
 def home(request):
     return render(request, 'home.html')
 
-
-def list_reports(request):
-    reports = Report.objects.order_by('title')
-    return render_to_response('list_reports.html',
-        {'reports' : reports},  context_instance=RequestContext(request))
-
 def report(request, report_id):
     report = get_object_or_404(Report, pk=report_id)
     return render_to_response('report.html',
         {'report':report},  context_instance=RequestContext(request))
 
+@login_required
 def add_report(request):
     check_formset = formset_factory(CheckForm)
     if request.method == 'GET':
@@ -35,16 +30,10 @@ def add_report(request):
         report_data = ReportForm(request.POST, prefix='report')
         checks_data = check_formset(request.POST, prefix='checks')
 
-        if request.user.is_authenticated():
-            user = request.user
-        else:
-            user = None
-
         if report_data.is_valid() and checks_data.is_valid():
             title       = report_data.cleaned_data['title']
             description = report_data.cleaned_data['description']
-            creator     = user
-
+            creator     = request.user
         else:
             report_form = ReportForm(request.POST, prefix="report")
             checks_forms = check_formset(request.POST, prefix="checks")
@@ -54,7 +43,7 @@ def add_report(request):
         report = Report(title=title, description = description, creator = creator)
         report.save()
 
-        for i in range(0,checks_data.total_form_count()):
+        for i in range(0, checks_data.total_form_count()):
             new_check = _build_new_check(checks_data, i)
             new_check.save()
             report.checks.add(new_check)
@@ -64,15 +53,16 @@ def add_report(request):
 
 @login_required
 def edit_report(request, report_id=''):
-    user = request.user
+    """ Edit an existing Report instance, including its check objects"""
     check_formset = formset_factory(CheckForm, can_delete=True, can_order=True)
+
     if request.method == 'GET':
         report = get_object_or_404(Report, pk=report_id)
-        if user != report.creator:
+        if request.user != report.creator:
             return HttpResponseRedirect('/') #Add error message about report ownership
         else:
             form = ReportForm(instance=report, prefix="report")
-            existing_checks = _bind_check_formset_with_report_checks(report, 'checks')
+            existing_checks = _bind_formset_with_object_instance(report, 'checks')
             formset  = check_formset(existing_checks,prefix='checks' )
             return render_to_response('reports.html',
                 {'report_form':form,'checks' : formset}, context_instance=RequestContext(request))
@@ -85,13 +75,14 @@ def edit_report(request, report_id=''):
         if report_data.is_valid() and checks_data.is_valid():
             report.title       = report_data.cleaned_data['title']
             report.description = report_data.cleaned_data['description']
+            report.creator     = request.user
             report.save()
 
             for i in range(0,checks_data.total_form_count()):
                 try:
-                    _edit_check(checks_data,i, report)
+                    check = report.checks.all()[i]
+                    check = _edit_check(checks_data,i, check)
                     report.checks.all()[i].save()
-
                 except IndexError:
                     new_check = _build_new_check(checks_data, i)
                     new_check.save()
@@ -104,6 +95,19 @@ def edit_report(request, report_id=''):
                 {'form' : error_form}, context_instance=RequestContext(request))
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
+
+def _edit_check(checks_data, i, check):
+    check.check_title = checks_data[i].cleaned_data['title']
+    check.description = checks_data[i].cleaned_data['description']
+    check.leader      = checks_data[i].cleaned_data['leader']
+    check.field       = checks_data[i].cleaned_data['field']
+    check.subfield    = checks_data[i].cleaned_data['subfield']
+    check.indicator   = checks_data[i].cleaned_data['indicator']
+    check.operator    = checks_data[i].cleaned_data['operator']
+    check.values      = checks_data[i].cleaned_data['values']
+    return check
+
+
 
 @login_required
 def fork_report(request, report_id):
@@ -135,8 +139,7 @@ def _fork_report(request, report_id):
 
 @login_required
 def myreports(request):
-    user = request.user
-    reports = Report.objects.filter(creator=user)
+    reports = Report.objects.filter(creator=request.user)
     return  render_to_response('myreports.html',
         {'reports':reports}, context_instance= RequestContext(request))
 
@@ -222,18 +225,18 @@ def about(request):
 def walkthrough(request):
     return
 
-def _bind_check_formset_with_report_checks(report, prefix='form' ):
+def _bind_formset_with_object_instance(report, prefix='form' ):
 
-    checkforms = [model_to_dict(check) for check in report.checks.all()]
+    forms = [model_to_dict(check) for check in report.checks.all()]
 
     new_formset_bind_data = {
-        prefix+'-TOTAL_FORMS': unicode(len(checkforms)),
-        prefix+'-INITIAL_FORMS': unicode(len(checkforms)),
+        prefix+'-TOTAL_FORMS': unicode(len(forms)),
+        prefix+'-INITIAL_FORMS': unicode(len(forms)),
         prefix+'-MAX_NUM_FORMS': u''
     }
 
-    for index, checkform in enumerate(checkforms):
-        check_dict = _build_formset_dict_from_check(checkform, index, prefix)
+    for index, form in enumerate(forms):
+        check_dict = _build_formset_dict_from_check(form, index, prefix)
         new_formset_bind_data.update(check_dict)
 
     return new_formset_bind_data
@@ -265,14 +268,5 @@ def _build_new_check(checks_data, i):
         values=values)
     return new_check
 
-def _edit_check(checks_data, i, report):
-    report.checks.all()[i].check_title = checks_data[i].cleaned_data['title']
-    report.checks.all()[i].description = checks_data[i].cleaned_data['description']
-    report.checks.all()[i].leader      = checks_data[i].cleaned_data['leader']
-    report.checks.all()[i].field       = checks_data[i].cleaned_data['field']
-    report.checks.all()[i].subfield    = checks_data[i].cleaned_data['subfield']
-    report.checks.all()[i].indicator   = checks_data[i].cleaned_data['indicator']
-    report.checks.all()[i].operator    = checks_data[i].cleaned_data['operator']
-    report.checks.all()[i].values      = checks_data[i].cleaned_data['values']
-    return True
+
 

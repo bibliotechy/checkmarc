@@ -19,7 +19,7 @@ urlpatterns = patterns('check.views',
 
     url(r'^checks/$','checks'),
 
-    url(r'^report/list/$', 'list_reports'),
+    url(r'^report/list/$', ListView.as_view(model=Report, template_name='list_reports.html')),
     url(r'^report/add/$', 'add_report'),
     url(r'^report/(?P<report_id>\d+)/$','report'),
     url(r'^report/(?P<report_id>\d+)/run/$','run_report'),
