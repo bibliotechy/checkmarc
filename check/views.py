@@ -17,6 +17,9 @@ def report(request, report_id):
     return render_to_response('report.html',
         {'report':report},  context_instance=RequestContext(request))
 
+
+#Really, I only want login on POST, so that you don't need
+#to register
 @login_required
 def add_report(request):
     check_formset = formset_factory(CheckForm)
