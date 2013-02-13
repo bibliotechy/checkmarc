@@ -1,4 +1,4 @@
-
+from re import match
 
 def operation_wrapper(operation, *args):
     args = filter(lambda x : x != '', args)
@@ -18,3 +18,6 @@ def starts_with(needle, haystack):
 
 def ends_with(needle, haystack):
     return bool(haystack.endswith(needle))
+
+def regex_match(value, pattern):
+    return bool(match(str(pattern),value).group())

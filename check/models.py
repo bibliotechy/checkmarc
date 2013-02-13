@@ -5,22 +5,6 @@ from django.db.models.signals import post_save
 import operator
 from check import extraOperators as exop
 
-class UserProfile(models.Model):
-    created = models.DateTimeField(auto_now_add=True)
-    user = models.OneToOneField(User, related_name='profile')
-    pic_url = models.URLField(blank=True)
-    home_url = models.URLField(blank=True)
-    twitter_id = models.CharField(max_length=100, blank=True)
-    facebook_id = models.CharField(max_length=100, blank=True)
-    linkedin_id= models.CharField(max_length=100, blank=True)
-    github_id = models.CharField(max_length=100, blank=True)
-
-def create_user_profile(sender, created, instance, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-
-post_save.connect(create_user_profile, sender=User)
-
 class Check(models.Model):
     """ Defines an individual check to perform on a record.
      Must contain either a field or leader value and an operator."""
@@ -33,9 +17,10 @@ class Check(models.Model):
         ('nx' , 'does not exist'),
         ('cn' , 'contains any of the following'),
         ('dc' , 'does not contain any of the following'),
-        ('em', 'is empty'),
-        ('sw', 'starts with'),
-        ('ew', 'ends with')
+        ('em' , 'is empty'),
+        ('sw' , 'starts with'),
+        ('ew' , 'ends with'),
+        #('re' , 'matches regular expression pattern') removed till fix the regex fucntion
         )
 
     title       = models.CharField(max_length=100, verbose_name="Check Title", blank=True )
@@ -67,10 +52,18 @@ class Check(models.Model):
         return result
 
     def run_check(self, record):
-        if self._run_operation(record):
-            return self
-        else:
-            return ""
+        """
+        Method to run the check as defined by the check instances properties
+        """
+        try:
+            if self._run_operation(record):
+                return self
+            else:
+               return ""
+        except TypeError:
+            #HACK - Need to handle fields / subfields that do not exist and
+            # bubble that up into a meaningful messages out to user.
+            return False
 
     def _run_operation(self, record):
         """ Perform the checks instances operation on the check's fields and values """
@@ -80,13 +73,21 @@ class Check(models.Model):
                                         record.leader[self.leader],
                                         self.values)
         if self._field():
-            return exop.operation_wrapper(operation,
+            if record[self.field]:
+                return exop.operation_wrapper(operation,
                                         record[self.field],
                                         self.values)
+            else:
+                return self.field + " does not exist"
+
         if self._subfield():
-            return exop.operation_wrapper(operation,
+            if record[self.field] and record[self.field][self.subfield]:
+                return exop.operation_wrapper(operation,
                                         record[self.field][self.subfield],
                                         self.values)
+            else:
+                return self.field + " or " + self.subfield + "does not exist"
+
         if self._indicator():
             return exop.operation_wrapper(operation,
                                         record[self.field].indicators[int(self.indicator)],
@@ -102,7 +103,8 @@ class Check(models.Model):
                               'dc': exop.is_not_in,
                               'em': exop.is_empty,
                               'sw': exop.starts_with,
-                              'ew': exop.ends_with
+                              'ew': exop.ends_with,
+                              're': exop.regex_match
                             }
         return operator_functions[self.operator]
 
