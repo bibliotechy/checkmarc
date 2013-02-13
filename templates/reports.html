@@ -28,38 +28,66 @@
         </div>
         {% if checks %}
             {{ checks.management_form }}
-            <legend>
-            {% for check in checks  %}
+            <fieldset class="check">
+            <legend>Checks</legend>
+            <div class="span11">
+            <table>
+                <tr>
+                    <th colspan="2">One of field or leader is required</th>
+                    <th colspan="2">Subfield and Indicator optional</th>
+                    <th>Operator is required</th>
+                    <th></th>
+                </tr>
+            </table>
+            </div>
+                {% for check in checks  %}
+                    {{ check.id }}
 
                 <div class="check clearfix span12" >
 
 
                     <div class="span11 pull-left">
+                           <table>
 
-                        <fieldset class="check">
-
-                            {{ check.leader.errors }}
-                            {{ check.leader|attr:"placeholder:Leader position"|add_class:"input-small" }}
-                            {{ check.field.errors }}
+                               <tr>
+                            <td>{{ check.leader.errors }}
+                            {{ check.leader|attr:"placeholder:Leader"|add_class:"input-small" }}
+                            </td>
+                            <td>
+                                {{ check.field.errors }}
                             {{ check.field|attr:"placeholder:Field"|add_class:"input-small" }}
-                            {{ check.subfield.errors }}
+                            </td>
+                            <td>
+                                   {{ check.subfield.errors }}
                             {{ check.subfield|attr:"placeholder:Subfield"|add_class:"input-small" }}
-                            {{ check.indicator.errors }}
-                            {{ check.indicator|attr:"placeholder:Indicator" }}
-                            {{ check.operator.errors }}
-                            {{ check.operator|attr:"placeholder:Operator" }}
-                            {{ check.values.errors }}
+                            </td>
+                            <td>
+                                {{ check.indicator.errors }}
+                            {{ check.indicator|attr:"placeholder:Indicator"|add_class:"input-medium" }}
+                            </td>
+                            <td>
+                               {{ check.operator.errors }}
+                            {{ check.operator }}
+                            </td>
+                            <td>
+                                {{ check.values.errors }}
                             {{ check.values|attr:"placeholder:Value(s)"|add_class:"input-small" }}
+                            </td>
+                               </tr>
+                           </table>
 
-                        </fieldset>
+
                     </div>
-                    <div class=" span1 pull-left">
+                    <div class="pull-left">
                 <a class="remove btn btn-danger btn-small">X</a>
                     </div>
                 </div>
 
-            {% endfor %}
-        </legend>
+                {% endfor %}
+
+            </fieldset>
+
+            <fieldset>
             <input type="button" value="Add Another Check" id="add_more">
             <script>
                 $('#add_more').click(function() {
@@ -67,8 +95,11 @@
                 });
             </script>
 
-        {% endif %}
+
         <input type="submit" value="Submit" />
+
+        </fieldset>
+        {% endif %}
 </form>
 <script type="text/javascript">
     function cloneMore(selector, type) {

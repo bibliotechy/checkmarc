@@ -11,7 +11,7 @@ def is_not_in(value, array):
     return bool(value not in array)
 
 def is_empty(record_field):
-    return bool(record_field)
+    return bool(not record_field)
 
 def starts_with(needle, haystack):
     return bool(haystack.startswith(needle))

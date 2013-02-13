@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django import forms
 from django.db.models.signals import post_save
 import operator
-from check import extraOperators
+from check import extraOperators as exop
 
 class UserProfile(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -76,15 +76,21 @@ class Check(models.Model):
         """ Perform the checks instances operation on the check's fields and values """
         operation = self._select_operation_function()
         if self._leader():
-            return extraOperators.operation_wrapper(operation, record.leader[self.leader], self.values)
+            return exop.operation_wrapper(operation,
+                                        record.leader[self.leader],
+                                        self.values)
         if self._field():
-            return extraOperators.operation_wrapper(operation, record[self.field], self.values)
+            return exop.operation_wrapper(operation,
+                                        record[self.field],
+                                        self.values)
         if self._subfield():
-            return extraOperators.operation_wrapper(operation, record[self.field][self.subfield], self.values)
+            return exop.operation_wrapper(operation,
+                                        record[self.field][self.subfield],
+                                        self.values)
         if self._indicator():
-            return extraOperators.operation_wrapper(operation,
-                                                    record[self.field].indicators[int(self.indicator)],
-                                                    self.values )
+            return exop.operation_wrapper(operation,
+                                        record[self.field].indicators[int(self.indicator)],
+                                        self.values )
 
     def _select_operation_function(self):
         """ Choose the function to be called based on check's operator """
@@ -92,11 +98,11 @@ class Check(models.Model):
                               'nq': operator.ne,
                               'ex': operator.truth,
                               'nx': operator.not_,
-                              'cn': extraOperators.is_in,
-                              'dc': extraOperators.is_not_in,
-                              'em': extraOperators.is_empty,
-                              'sw': extraOperators.starts_with,
-                              'ew': extraOperators.ends_with
+                              'cn': exop.is_in,
+                              'dc': exop.is_not_in,
+                              'em': exop.is_empty,
+                              'sw': exop.starts_with,
+                              'ew': exop.ends_with
                             }
         return operator_functions[self.operator]
 
