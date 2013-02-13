@@ -8,7 +8,6 @@ from django.contrib.auth.decorators import login_required
 import operator
 import pymarc
 
-
 def home(request):
     return render(request, 'home.html')
 
@@ -26,8 +25,9 @@ def add_report(request):
     """
     if request.method == 'GET':
         CheckFormSet = formset_factory(CheckForm)
-        report = ReportForm(prefix='report')
-        formset  = CheckFormSet(prefix='checks')
+        report       = ReportForm(prefix='report')
+        formset      = CheckFormSet(prefix='checks')
+
         return render_to_response('reports.html',
             {'report_form': report, 'checks' : formset}, context_instance=RequestContext(request))
 
@@ -47,12 +47,15 @@ def add_report(request):
                 new_check = _build_new_check(checks_data, i)
                 new_check.save()
                 report.checks.add(new_check)
-                report.save()
+
+            report.save()
+
             return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
         else:
             report_form  = ReportForm(request.POST, prefix="report")
             checks_forms = check_formset(request.POST, prefix="checks")
+
             return render_to_response('reports.html',
                 {'report_form' : report_form, 'checks': checks_forms}, context_instance=RequestContext(request))
 
@@ -102,19 +105,6 @@ def edit_report(request, report_id=''):
 
         return HttpResponseRedirect('/report/'+ str(report.pk) +'/') # Redirect after POST
 
-def _edit_check(checks_data, i, check):
-    check.check_title = checks_data[i].cleaned_data['title']
-    check.description = checks_data[i].cleaned_data['description']
-    check.leader      = checks_data[i].cleaned_data['leader']
-    check.field       = checks_data[i].cleaned_data['field']
-    check.subfield    = checks_data[i].cleaned_data['subfield']
-    check.indicator   = checks_data[i].cleaned_data['indicator']
-    check.operator    = checks_data[i].cleaned_data['operator']
-    check.values      = checks_data[i].cleaned_data['values']
-    return check
-
-
-
 @login_required
 def fork_report(request, report_id):
     """
@@ -126,22 +116,6 @@ def fork_report(request, report_id):
     else:
         #add a nice message about only accepting post here.
         return redirect("/")
-
-def _fork_report(request, report_id):
-    """
-    Create copy of an object, but issue new pk, creator and possibly title
-    """
-    report_to_copy         = Report(pk=report_id)
-    checks_to_copy         = report_to_copy.checks.all()
-    report_to_copy.pk      = None #setting pk to None, then saving te object creates a new object. django++
-    report_to_copy.creator = request.user
-    report_to_copy.save()
-
-    report_to_copy.checks = checks_to_copy
-    report_to_copy.save()
-    return report_to_copy
-
-
 
 @login_required
 def myreports(request):
@@ -208,6 +182,10 @@ def walkthrough(request):
     return
 
 def _build_new_check(checks_data, i):
+    """
+    Helper function to build a new check for a report.
+    Must still be saved to the report.
+    """
 
     check_title = checks_data[i].cleaned_data['title']
     description = checks_data[i].cleaned_data['description']
@@ -227,3 +205,31 @@ def _build_new_check(checks_data, i):
         operator=operator,
         values=values)
     return new_check
+
+def _edit_check(checks_data, i, check):
+    """
+    Helper function to edit an existing check that is part of a report.
+    """
+    check.check_title = checks_data[i].cleaned_data['title']
+    check.description = checks_data[i].cleaned_data['description']
+    check.leader      = checks_data[i].cleaned_data['leader']
+    check.field       = checks_data[i].cleaned_data['field']
+    check.subfield    = checks_data[i].cleaned_data['subfield']
+    check.indicator   = checks_data[i].cleaned_data['indicator']
+    check.operator    = checks_data[i].cleaned_data['operator']
+    check.values      = checks_data[i].cleaned_data['values']
+    return check
+
+def _fork_report(request, report_id):
+    """
+    Create copy of an object, but issue new pk, creator and possibly title
+    """
+    forked_report         = Report(pk=report_id)
+    checks_to_copy         = forked_report.checks.all()
+    forked_report.pk      = None #setting pk to None, then saving te object creates a new object. django++
+    forked_report.creator = request.user
+    forked_report.save()
+
+    forked_report.checks = checks_to_copy
+    forked_report.save()
+    return forked_report
