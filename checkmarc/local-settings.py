@@ -125,7 +125,7 @@ ROOT_URLCONF = 'checkmarc.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'checkmarc.wsgi.application'
 
-TEMPLATE_DIRS = ('/home/cbn/PycharmProjects/checkmarc/templates',)
+TEMPLATE_DIRS = (PROJECT_DIR + '/../templates',)
 
 TEMPLATE_CONTEXT_PROCESSORS =  (
     "django.core.context_processors.static",
