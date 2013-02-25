@@ -152,7 +152,7 @@ def run_report(request, report_id):
                 results[name] = {}
 
                 for check in report.checks.all():
-                    result = check.run_check(record)
+                    result = check.run(record)
 
                     if result:
                         results[name][check.__unicode__()] = result

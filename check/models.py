@@ -51,7 +51,7 @@ class Check(models.Model):
             result = self.title
         return result
 
-    def run_check(self, record):
+    def run(self, record):
         """
         Method to run the check as defined by the check instances properties
         """
@@ -158,6 +158,7 @@ class RunReportForm(forms.ModelForm):
         self.fields['report'] = forms.ModelChoiceField(
             queryset=Report.objects.filter(pk=report_id), empty_label=None )
 
+    #Doesn't actually do anything with this yet.
     OUTPUTS = (
         ('scr', 'Print the results to screen'),
         ('jsn','Output to a json file' ),
