@@ -37,16 +37,16 @@ class Check(models.Model):
         result = ""
         if not self.title:
           if self.leader:
-            result += "leader position " + str(self.leader)
+            result += u"Leader position " + unicode(self.leader)
           if self.field:
             result += self.field
           if self.subfield:
-            result += " " + self.subfield
+            result += u" " + self.subfield
           if self.indicator:
-            result += " " + self.get_indicator_display()
-          result += " " +self.get_operator_display()
+            result += u" " + self.get_indicator_display()
+          result += u" " +self.get_operator_display()
           if self.values:
-            result += " " +self.values
+            result += u" " +self.values
         else:
             result = self.title
         return result
@@ -70,28 +70,24 @@ class Check(models.Model):
         operation = self._select_operation_function()
         if self._leader():
             return exop.operation_wrapper(operation,
-                                        record.leader[self.leader],
-                                        self.values)
+                    record.leader[self.leader], self.values)
         if self._field():
             if record[self.field]:
                 return exop.operation_wrapper(operation,
-                                        record[self.field],
-                                        self.values)
+                    record[self.field], self.values)
             else:
                 return self.field + " does not exist"
 
         if self._subfield():
             if record[self.field] and record[self.field][self.subfield]:
                 return exop.operation_wrapper(operation,
-                                        record[self.field][self.subfield],
-                                        self.values)
+                    record[self.field][self.subfield],self.values)
             else:
                 return self.field + " or " + self.subfield + "does not exist"
 
         if self._indicator():
             return exop.operation_wrapper(operation,
-                                        record[self.field].indicators[int(self.indicator)],
-                                        self.values )
+                    record[self.field].indicators[int(self.indicator)], self.values)
 
     def _select_operation_function(self):
         """ Choose the function to be called based on check's operator """
