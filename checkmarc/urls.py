@@ -12,12 +12,9 @@ urlpatterns = patterns('check.views',
     url(r'$wtf/$','walkthrough'),
     url(r'$about/$','about'),
 
-
-
     url(r'^login/$', 'login'),
     url(r'^logout/$', 'logout'),
 
-    url(r'^checks/$','checks'),
 
     url(r'^report/list/$', ListView.as_view(model=Report, template_name='list_reports.html')),
     url(r'^report/add/$', 'add_report'),

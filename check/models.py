@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django import forms
-from django.db.models.signals import post_save
 import operator
 from check import extraOperators as exop
 
@@ -59,35 +58,33 @@ class Check(models.Model):
             if self._run_operation(record):
                 return self
             else:
-               return ""
-        except TypeError:
+                return False
+        except TypeError as e:
             #HACK - Need to handle fields / subfields that do not exist and
             # bubble that up into a meaningful messages out to user.
-            return False
+
+            return u"Field " + self.field + u" does not exist"
 
     def _run_operation(self, record):
         """ Perform the checks instances operation on the check's fields and values """
         operation = self._select_operation_function()
+
         if self._leader():
             return exop.operation_wrapper(operation,
                     record.leader[self.leader], self.values)
+
         if self._field():
-            if record[self.field]:
                 return exop.operation_wrapper(operation,
                     record[self.field], self.values)
-            else:
-                return self.field + " does not exist"
 
         if self._subfield():
-            if record[self.field] and record[self.field][self.subfield]:
-                return exop.operation_wrapper(operation,
-                    record[self.field][self.subfield],self.values)
-            else:
-                return self.field + " or " + self.subfield + "does not exist"
+            return exop.operation_wrapper(operation,
+                record[self.field][self.subfield],self.values)
 
         if self._indicator():
             return exop.operation_wrapper(operation,
                     record[self.field].indicators[int(self.indicator)], self.values)
+
 
     def _select_operation_function(self):
         """ Choose the function to be called based on check's operator """

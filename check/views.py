@@ -2,10 +2,9 @@ from check.models import *
 from django.shortcuts import render, render_to_response, HttpResponseRedirect, redirect, get_object_or_404
 from django.template import RequestContext
 from django.forms.formsets import formset_factory
-from django.forms.models import model_to_dict, modelformset_factory
+from django.forms.models import modelformset_factory
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
-import operator
 import pymarc
 
 def home(request):
@@ -196,9 +195,7 @@ def _build_new_check(checks_data, i):
     operator    = checks_data[i].cleaned_data['operator']
     values      = checks_data[i].cleaned_data['values']
 
-    new_check = Check(title=check_title,
-        description=description,
-        leader=leader,
+    new_check = Check(leader=leader,
         field=field,
         subfield=subfield,
         indicator=indicator,

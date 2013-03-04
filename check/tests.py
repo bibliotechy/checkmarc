@@ -2,20 +2,32 @@ from django.test import TestCase
 from check.models import *
 from checkmarc.settings import PROJECT_DIR
 from pymarc import MARCReader
+from django.test import client
 
 class CheckTestCase(TestCase):
     def setUp(self):
+
+        user = User.objects.create_user("tester", "testing@test.com", "tester")
+        user.save()
+        self.c = client.Client()
 
         self.record = [r for r in
             MARCReader(open(PROJECT_DIR + "/../test-helpers/files/books.mrc"),
             to_unicode=True)][0]
 
         self.leaderPositionEquals = Check(leader=5, operator=u"eq", values=u"c")
+        self.leaderPositionEquals.save()
         self.fieldNotEqual = Check(field=u"245",operator=u"nq", values=u"Some unlikely book title")
         self.subfieldEquals = Check(field=u"245", subfield=u"a", operator=u"eq", values=u"The alpha masters :")
         self.indicatorIn = Check(field=u"245", indicator=u"1", operator=u"cn", values=u"0,4")
         self.subfieldExists = Check(field=u"245", subfield=u"a", operator=u"ex")
         self.subfieldDoesntExist = Check(field=u"245", subfield=u"q", operator=u"nx")
+        self.nonExistentFieldSubfield = Check(field=u"301", subfield=u"a", operator=u"eq", values=u"")
+
+        self.report = Report(title="Testing Report 1", creator=user)
+        self.report.save()
+        self.report.checks.add(self.leaderPositionEquals)
+        self.report.save()
 
 
     def test_unicode_display(self):
@@ -52,35 +64,46 @@ class CheckTestCase(TestCase):
         self.assertTrue(self.subfieldExists.run(self.record),
             u"Returns that existing field does not exist ")
         self.assertTrue(self.subfieldDoesntExist.run(self.record),
-            u"Returns that non-existent subfield does exist")
+            u"Returns that " + str(bool(self.record[self.subfieldDoesntExist.field][self.subfieldDoesntExist.subfield])) +  u" implies existence")
         self.assertTrue(self.leaderPositionEquals.run(self.record),
             u"Returns False on " + self.record.leader[self.leaderPositionEquals.leader] +
             u" == " + self.leaderPositionEquals.values)
+        self.assertEquals(self.nonExistentFieldSubfield.run(self.record),
+            u"Field 301 does not exist",
+            u"Should return error message if" + self.nonExistentFieldSubfield.field+ u" does not exist" )
 
     def test_helper_methods(self):
-        #Leader helper
+        #Leader helper - determines if the check should evaluate the record leader
         self.assertTrue(self.leaderPositionEquals._leader(),
             u"Returns False that leader exists when it is not present")
         self.assertFalse(self.fieldNotEqual._leader(),
             u"Returns True that leader exists when it is not present")
-        #Field helper
+        #Field helper - determines if the check should evaluate the record field
         self.assertTrue(self.fieldNotEqual._field(),
             u"Returns False that field exists and/or subfield and/or indicator do not")
         self.assertFalse(self.subfieldEquals._field(),
             u"Returns True that field doesnt exist and/or subfield or indicator does ")
-        #Subfield helper
+        #Subfield helper - determines if the check should evaluate the record subfield
         self.assertTrue(self.subfieldEquals._subfield(),
             u"Returns False that subfield exists when it is present")
         self.assertFalse(self.indicatorIn._subfield(),
             u"Returns True that subfield exists when it is not present")
-        #indicator helper
+        #indicator helper - determines if the check should evaluate the record indicator
         self.assertTrue(self.indicatorIn._indicator(),
             u"Returns False that indicator exists and subfield doesn't")
         self.assertFalse(self.subfieldEquals._indicator(),
             u"Returns True that indicator exists or subfield doesn't")
-
+        #Should only return functions
         self.assertTrue(hasattr(self.leaderPositionEquals._select_operation_function(), "__call__" ),
             u"Should return a function that is callable")
+
+    def test_views(self):
+
+        user = self.c.login(username='tester',  password='tester')
+        response = self.c.get('/report/list/' , follow=True)
+        h = response.status_code
+        self.assertEquals(response.status_code ,200,
+            "It should be a 200 response status, but instead it is" + str(response.status_code)  )
 
 
 
