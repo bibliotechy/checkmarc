@@ -30,21 +30,10 @@
             {{ checks.management_form }}
             <fieldset class="check">
             <legend>Checks</legend>
-            <div class="span11">
-            <table>
-                <tr>
-                    <th colspan="2">One of field or leader is required</th>
-                    <th colspan="2">Subfield and Indicator optional</th>
-                    <th>Operator is required</th>
-                    <th></th>
-                </tr>
-            </table>
-            </div>
                 {% for check in checks  %}
                     {{ check.id }}
 
                 <div class="check clearfix span12" >
-
 
                     <div class="span11 pull-left">
                            <table>
@@ -130,7 +119,8 @@
 
     $('a.remove').on('click',function(){
       if ($("div.check").length > 1){
-        check = $(this).parent();
+        check = $(this).closest(".check");
+          console.log(check);
         removeMore(check, 'checks');
       }
        else { alert("Add an alert about not deleting only check");}

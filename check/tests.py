@@ -23,6 +23,7 @@ class CheckTestCase(TestCase):
         self.subfieldExists = Check(field=u"245", subfield=u"a", operator=u"ex")
         self.subfieldDoesntExist = Check(field=u"245", subfield=u"q", operator=u"nx")
         self.nonExistentFieldSubfield = Check(field=u"301", subfield=u"a", operator=u"eq", values=u"")
+        self.regexpOperator = Check(field=u"300", subfield=u"a", operator=u"re", values=u"\d+")
 
         self.report = Report(title="Testing Report 1", creator=user)
         self.report.save()
@@ -71,6 +72,8 @@ class CheckTestCase(TestCase):
         self.assertEquals(self.nonExistentFieldSubfield.run(self.record),
             u"Field 301 does not exist",
             u"Should return error message if" + self.nonExistentFieldSubfield.field+ u" does not exist" )
+        self.assertTrue(self.regexpOperator.run(self.record),
+            u"Field 300 should contain a number" )
 
     def test_helper_methods(self):
         #Leader helper - determines if the check should evaluate the record leader
@@ -104,7 +107,6 @@ class CheckTestCase(TestCase):
         h = response.status_code
         self.assertEquals(response.status_code ,200,
             "It should be a 200 response status, but instead it is" + str(response.status_code)  )
-
 
 
     def tearDown(self):

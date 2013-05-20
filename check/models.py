@@ -19,7 +19,7 @@ class Check(models.Model):
         ('em' , 'is empty'),
         ('sw' , 'starts with'),
         ('ew' , 'ends with'),
-        #('re' , 'matches regular expression pattern') removed till fix the regex fucntion
+        ('re' , 'matches regular expression pattern')
         )
 
     title       = models.CharField(max_length=100, verbose_name="Check Title", blank=True )
@@ -27,8 +27,7 @@ class Check(models.Model):
     leader      = models.IntegerField(blank=True, null=True, verbose_name="MARC Record leader")
     field       = models.CharField(max_length=10, blank=True, help_text="A MARC field")
     subfield    = models.CharField(max_length=10,blank=True)
-    indicator   = models.CharField(max_length=10,blank=True,
-                    choices=(('1','indicator1'),('2','indicator2')))
+    indicator   = models.CharField(max_length=10,blank=True)
     operator    = models.CharField(max_length=2, choices=OPS, default=0)
     values      = models.CharField(max_length=100, blank=True)
 

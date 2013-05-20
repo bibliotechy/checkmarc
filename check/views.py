@@ -220,9 +220,11 @@ def _edit_check(checks_data, i, check):
 def _fork_report(request, report_id):
     """
     Create copy of an object, but issue new pk, creator and possibly title
+    :param request: 
+    :param report_id: 
     """
     forked_report         = Report(pk=report_id)
-    checks_to_copy         = forked_report.checks.all()
+    checks_to_copy        = forked_report.checks.all()
     forked_report.pk      = None #setting pk to None, then saving te object creates a new object. django++
     forked_report.creator = request.user
     forked_report.save()
