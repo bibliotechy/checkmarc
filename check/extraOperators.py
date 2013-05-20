@@ -1,4 +1,4 @@
-from re import match
+from re import search
 
 def operation_wrapper(operation, *args):
     args = filter(lambda x : x != '', args)
@@ -20,4 +20,8 @@ def ends_with(needle, haystack):
     return bool(haystack.endswith(needle))
 
 def regex_match(value, pattern):
-    return bool(match(str(pattern),value).group())
+    try:
+        found = search(str(pattern),value).group()
+    except AttributeError:
+        found = False
+    return bool(found)
