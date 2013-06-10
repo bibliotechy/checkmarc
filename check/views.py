@@ -109,7 +109,7 @@ def fork_report(request, report_id):
     """
     Forks a report and then routes user to edit page for the new report.
     """
-    if request.method == "POST":
+    if request.method == "GET":
         new_report = _fork_report(request,report_id)
         return HttpResponseRedirect("/report/" + str(new_report.pk) + "/edit/")
     else:
@@ -152,7 +152,7 @@ def run_report(request, report_id):
 
                 for check in report.checks.all():
                     result = check.run(record)
-
+              
                     if result:
                         results[name][check.__unicode__()] = result
 
@@ -163,6 +163,7 @@ def run_report(request, report_id):
             error_form = RunReportForm(report_id, request.POST, request.FILES)
             return render_to_response('run_report.html',
                 {'run_report' : error_form}, context_instance=RequestContext(request))
+
 
 def login(request):
     if request.user.is_authenticated():
